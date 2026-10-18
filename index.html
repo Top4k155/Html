@@ -1,280 +1,41 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Автономный P2P Менеджер Задач</title>
-    <style>
-        :root {
-            --bg-color: #121212;
-            --panel-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --accent-color: #00adb5;
-            --protest-bg: #3a0007;
-            --protest-border: #ff3344;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        #protest-banner {
-            width: 100%;
-            background-color: var(--protest-bg);
-            border-bottom: 2px solid var(--protest-border);
-            padding: 12px 20px;
-            box-sizing: border-box;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-        .protest-text {
-            font-size: 14px;
-            color: #ffcccc;
-            margin-right: 15px;
-            line-height: 1.4;
-        }
-        .protest-text a {
-            color: #ff6677;
-            text-decoration: underline;
-            font-weight: bold;
-        }
-        .close-banner-btn {
-            background: none;
-            border: none;
-            color: #ffcccc;
-            font-size: 20px;
-            cursor: pointer;
-            padding: 0 5px;
-        }
-        .container {
-            width: 90%;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-        }
-        h1, h2 { color: var(--accent-color); }
-        .panel {
-            background-color: var(--panel-bg);
-            border: 1px solid #333;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
-        .network-status {
-            display: inline-block;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background-color: #ff3333;
-            margin-right: 8px;
-        }
-        .network-status.connected { background-color: #33ff33; }
-        textarea {
-            width: 100%;
-            height: 80px;
-            background-color: #2d2d2d;
-            border: 1px solid #444;
-            color: #fff;
-            padding: 10px;
-            border-radius: 4px;
-            box-sizing: border-box;
-            resize: vertical;
-            margin-bottom: 10px;
-            font-family: monospace;
-        }
-        button {
-            background-color: var(--accent-color);
-            border: none;
-            color: #121212;
-            padding: 10px 15px;
-            font-weight: bold;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-right: 5px;
-            margin-bottom: 5px;
-        }
-        .task-input-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        .task-input-group input {
-            flex: 1;
-            padding: 10px;
-            background-color: #2d2d2d;
-            border: 1px solid #444;
-            color: #fff;
-            border-radius: 4px;
-        }
-        .task-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            background-color: #252525;
-            border-bottom: 1px solid #333;
-            margin-bottom: 5px;
-            border-radius: 4px;
-        }
-        .task-item.completed span {
-            text-decoration: line-through;
-            color: #777;
-        }
-    </style>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#f5f5f2">
+<title>Связь — P2P чат</title>
+<style>
+:root{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#202522;background:#f5f5f2;font-size:16px}*{box-sizing:border-box}body{margin:0;min-height:100vh}button,textarea{font:inherit}button{min-height:46px;border:0;border-radius:12px;padding:0 16px;background:#246b50;color:white;font-weight:650;cursor:pointer}button:hover{background:#19563f}button.secondary{background:#e7ebe7;color:#26332c;border:1px solid #d9dfda}button:disabled{opacity:.48;cursor:not-allowed}.shell{max-width:1080px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}.brand{font-size:21px;font-weight:750;letter-spacing:-.5px}.brand span{color:#246b50}.badge{font-size:14px;color:#59645d;display:flex;align-items:center;gap:8px}.dot{width:9px;height:9px;background:#a2aaa4;border-radius:50%}.dot.on{background:#28a36e}.layout{display:grid;grid-template-columns:340px minmax(0,1fr);gap:18px;min-height:690px}.panel,.chat{background:white;border:1px solid #e5e8e4;border-radius:18px}.panel{padding:22px}.panel h1{font-size:23px;margin:0 0 7px;letter-spacing:-.6px}.muted{color:#69736c;font-size:14px;line-height:1.5}.step{margin-top:23px}.step h2{font-size:15px;margin:0 0 9px}.step p{margin:0 0 10px}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}.code{width:100%;min-height:105px;resize:vertical;border:1px solid #dce2dd;border-radius:11px;padding:11px;color:#28342c;background:#fbfcfb;font-size:14px;line-height:1.45;overflow-wrap:anywhere}.code:focus,textarea:focus{outline:2px solid #9bc9b1;outline-offset:1px}.hint{font-size:13px;color:#717b74;margin-top:8px;line-height:1.45}.chat{display:flex;flex-direction:column;overflow:hidden;min-height:690px}.chathead{padding:19px 22px;border-bottom:1px solid #edf0ed;display:flex;justify-content:space-between;align-items:center}.chathead strong{font-size:16px}.messages{padding:22px;flex:1;overflow:auto;display:flex;flex-direction:column;gap:12px}.empty{margin:auto;text-align:center;max-width:300px;color:#69736c;line-height:1.55}.empty b{display:block;color:#28342c;margin-bottom:6px}.msg{max-width:78%;padding:11px 14px;border-radius:15px;background:#f0f3f0;align-self:flex-start;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.45}.msg.mine{background:#e2f2e9;align-self:flex-end}.time{font-size:12px;color:#778078;margin-top:5px}.compose{padding:14px 16px;border-top:1px solid #edf0ed;display:flex;gap:10px}.compose textarea{flex:1;min-height:48px;max-height:130px;resize:vertical;border:1px solid #dce2dd;border-radius:12px;padding:12px}.compose button{min-width:88px}.notice{margin-top:14px;font-size:12px;line-height:1.5;color:#7b847d}.toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:#202522;color:#fff;padding:11px 16px;border-radius:10px;display:none;max-width:90%;z-index:2}.chathead button{min-height:38px;padding:0 12px;font-size:14px}
+@media(max-width:760px){.shell{padding:14px}.top{margin-bottom:14px}.layout{grid-template-columns:1fr;gap:12px}.panel{padding:18px}.step{margin-top:18px}.chat{min-height:440px;height:56vh}.messages{padding:15px}.chathead{padding:14px 16px}.compose{padding:10px}.compose button{min-width:72px}.badge{font-size:13px}}
+</style>
 </head>
-<body>
-    <div id="protest-banner">
-        <div class="protest-text">
-            ✊ <strong>Внимание:</strong> Этот инструмент работает без участия серверов Big Tech. Мы заявляем протест против тотальной слежки, цензуры и сбора данных со стороны корпораций. Ваши данные принадлежат только вам. Узнайте больше на независимом ресурсе движения <a href="https://www.reddit.com/r/degoogle/" target="_blank" rel="noopener noreferrer">DeGoogle</a> или изучите <a href="https://en.wikipedia.org/wiki/Criticism_of_Google" target="_blank" rel="noopener noreferrer">Манифест критики корпораций</a>.
-        </div>
-        <button class="close-banner-btn" onclick="closeBanner()">&times;</button>
-    </div>
-
-    <div class="container">
-        <h1>Автономный P2P Менеджер</h1>
-        <div class="panel">
-            <h2><span id="status-dot" class="network-status"></span> Синхронизация без серверов (P2P)</h2>
-            <p style="font-size: 13px; color: #aaa;">Для обхода блокировок обменяйтесь одноразовыми ключами вручную с другим устройством.</p>
-            <div>
-                <button onclick="createOffer()">1. Создать код приглашения</button>
-                <button onclick="createAnswer()">2. Создать ответ на чужой код</button>
-                <button onclick="processAnswer()">3. Подтвердить подключение</button>
-            </div>
-            <p style="margin-top: 15px; margin-bottom: 5px;">Поле ввода / вывода текстового кода связи:</p>
-            <textarea id="rtc-data-channel" placeholder="Вставьте код с другого устройства сюда..."></textarea>
-        </div>
-
-        <div class="panel">
-            <h2>Мои Задачи (Хранятся локально)</h2>
-            <div class="task-input-group">
-                <input type="text" id="new-task-text" placeholder="Что нужно сделать?">
-                <button onclick="addTask()">Добавить</button>
-            </div>
-            <div id="tasks-list"></div>
-        </div>
-    </div>
-
-    <script>
-        let tasks = JSON.parse(localStorage.getItem('p2p_tasks')) || [];
-        let localConnection, dataChannel;
-        const configuration = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-
-        if (localStorage.getItem('protest_banner_closed') === 'true') {
-            document.getElementById('protest-banner').style.display = 'none';
-        }
-        function closeBanner() {
-            document.getElementById('protest-banner').style.display = 'none';
-            localStorage.setItem('protest_banner_closed', 'true');
-        }
-
-        function renderTasks() {
-            const list = document.getElementById('tasks-list');
-            list.innerHTML = '';
-            tasks.sort((a, b) => b.updatedAt - a.updatedAt);
-            tasks.forEach(task => {
-                const item = document.createElement('div');
-                item.className = `task-item ${task.completed ? 'completed' : ''}`;
-                item.innerHTML = `
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <input type="checkbox" ${task.completed ? 'checked' : ''} onclick="toggleTask('${task.id}')">
-                        <span>${escapeHtml(task.text)}</span>
-                    </div>
-                    <button style="background:#cc3333; color:white; padding: 5px 10px;" onclick="deleteTask('${task.id}')">Удалить</button>
-                `;
-                list.appendChild(item);
-            });
-            localStorage.setItem('p2p_tasks', JSON.stringify(tasks));
-        }
-
-        function escapeHtml(text) {
-            return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        }
-
-        function addTask() {
-            const input = document.getElementById('new-task-text');
-            if (!input.value.trim()) return;
-            tasks.push({ id: Math.random().toString(36).substr(2, 9), text: input.value, completed: false, updatedAt: Date.now() });
-            input.value = '';
-            renderTasks();
-            broadcastData({ type: 'SYNC', payload: tasks });
-        }
-
-        function toggleTask(id) {
-            tasks = tasks.map(t => t.id === id ? { ...t, completed: !t.completed, updatedAt: Date.now() } : t);
-            renderTasks();
-            broadcastData({ type: 'SYNC', payload: tasks });
-        }
-
-        function deleteTask(id) {
-            tasks = tasks.filter(t => t.id !== id);
-            renderTasks();
-            broadcastData({ type: 'SYNC', payload: tasks });
-        }
-
-        function setupDataChannelHandlers() {
-            dataChannel.onopen = () => {
-                document.getElementById('status-dot').className = 'network-status connected';
-                broadcastData({ type: 'SYNC', payload: tasks });
-            };
-            dataChannel.onclose = () => { document.getElementById('status-dot').className = 'network-status'; };
-            dataChannel.onmessage = (e) => {
-                const message = JSON.parse(e.data);
-                if (message.type === 'SYNC') {
-                    const localMap = new Map(tasks.map(t => [t.id, t]));
-                    message.payload.forEach(rt => {
-                        const lt = localMap.get(rt.id);
-                        if (!lt || rt.updatedAt > lt.updatedAt) localMap.set(rt.id, rt);
-                    });
-                    tasks = Array.from(localMap.values());
-                    renderTasks();
-                }
-            };
-        }
-
-        function broadcastData(data) {
-            if (dataChannel && dataChannel.readyState === 'open') dataChannel.send(JSON.stringify(data));
-        }
-
-        async function createOffer() {
-            localConnection = new RTCPeerConnection(configuration);
-            dataChannel = localConnection.createDataChannel("taskSyncChannel");
-            setupDataChannelHandlers();
-            localConnection.onicecandidate = e => {
-                if (!e.candidate) document.getElementById('rtc-data-channel').value = btoa(JSON.stringify(localConnection.localDescription));
-            };
-            const offer = await localConnection.createOffer();
-            await localConnection.setLocalDescription(offer);
-        }
-
-        async function createAnswer() {
-            const rawInput = document.getElementById('rtc-data-channel').value.trim();
-            if (!rawInput) return alert("Вставьте код приглашения!");
-            localConnection = new RTCPeerConnection(configuration);
-            localConnection.ondatachannel = e => { dataChannel = e.channel; setupDataChannelHandlers(); };
-            localConnection.onicecandidate = e => {
-                if (!e.candidate) document.getElementById('rtc-data-channel').value = btoa(JSON.stringify(localConnection.localDescription));
-            };
-            await localConnection.setRemoteDescription(JSON.parse(atob(rawInput)));
-            const answer = await localConnection.createAnswer();
-            await localConnection.setLocalDescription(answer);
-        }
-
-        async function processAnswer() {
-            const rawInput = document.getElementById('rtc-data-channel').value.trim();
-            if (!rawInput) return alert("Вставьте ответный код!");
-            await localConnection.setRemoteDescription(JSON.parse(atob(rawInput)));
-        }
-
-        renderTasks();
-    </script>
-</body>
-  </html>
+<body><main class="shell">
+<header class="top"><div class="brand"><span>Связь</span> / P2P</div><div class="badge"><i class="dot" id="dot"></i><span id="status">Не подключено</span></div></header>
+<div class="layout">
+<aside class="panel"><h1>Чат без сервера</h1><p class="muted">Сообщения идут напрямую между браузерами через WebRTC. Создайте подключение и обменяйтесь кодами любым удобным способом.</p>
+<section class="step"><h2>1. Создать приглашение</h2><p class="muted">На одном устройстве нажмите кнопку и отправьте код собеседнику.</p><button id="offerBtn">Создать код приглашения</button><textarea class="code" id="offerOut" readonly placeholder="Здесь появится код для собеседника"></textarea></section>
+<section class="step"><h2>2. Ответить на приглашение</h2><p class="muted">Второй участник вставляет полученный код и создаёт ответ.</p><textarea class="code" id="offerIn" placeholder="Вставьте сюда код приглашения"></textarea><button id="answerBtn" class="secondary" style="margin-top:8px;width:100%">Создать ответ</button><textarea class="code" id="answerOut" readonly placeholder="Ответный код появится здесь"></textarea></section>
+<section class="step"><h2>3. Завершить соединение</h2><p class="muted">Отправьте ответ первому участнику. Он вставит его сюда:</p><textarea class="code" id="answerIn" placeholder="Вставьте сюда ответ собеседника"></textarea><button id="finishBtn" class="secondary" style="margin-top:8px;width:100%">Подключиться</button></section>
+<div class="notice">Для установления соединения может потребоваться доступ к STUN-серверу для обнаружения адреса устройства. Содержимое чата не сохраняется и после перезагрузки страницы исчезает. Не пересылайте коды подключения посторонним.</div></aside>
+<section class="chat"><div class="chathead"><strong>Переписка</strong><button id="clearBtn" class="secondary">Очистить</button></div><div class="messages" id="messages"><div class="empty" id="empty"><b>Пока здесь тихо</b>Создайте соединение с собеседником, чтобы начать переписку.</div></div><form class="compose" id="form"><textarea id="text" placeholder="Напишите сообщение…" aria-label="Сообщение" disabled></textarea><button id="send" disabled>Отправить</button></form></section>
+</div></main><div class="toast" id="toast"></div>
+<script>
+(()=>{
+const $=id=>document.getElementById(id);let pc=null,channel=null,toastTimer;
+function toast(s){const t=$('toast');t.textContent=s;t.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.display='none',3200)}
+function status(s,on=false){$('status').textContent=s;$('dot').classList.toggle('on',on);$('text').disabled=!on;$('send').disabled=!on}
+function makePC(){if(pc)pc.close();pc=new RTCPeerConnection({iceServers:[{urls:'stun:stun.l.google.com:19302'}]});pc.onconnectionstatechange=()=>{if(pc.connectionState==='connected')status('Подключено',true);else if(['failed','disconnected','closed'].includes(pc.connectionState))status('Соединение потеряно')};pc.ondatachannel=e=>bind(e.channel);return pc}
+function bind(ch){channel=ch;ch.onopen=()=>status('Подключено',true);ch.onclose=()=>status('Соединение закрыто');ch.onmessage=e=>{try{const d=JSON.parse(e.data);if(d.text)render(d.text,false,d.time)}catch{render(e.data,false)}}}
+function render(text,mine,time=Date.now()){const empty=$('empty');if(empty)empty.remove();const box=document.createElement('div');box.className='msg'+(mine?' mine':'');const body=document.createElement('div');body.textContent=text;const tm=document.createElement('div');tm.className='time';tm.textContent=new Date(time).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});box.append(body,tm);$('messages').append(box);$('messages').scrollTop=$('messages').scrollHeight}
+function waitIce(p){return new Promise((resolve,reject)=>{if(p.iceGatheringState==='complete')return resolve();const timer=setTimeout(()=>reject(Error('Не удалось собрать данные подключения. Проверьте интернет и попробуйте снова.')),20000);p.onicegatheringstatechange=()=>{if(p.iceGatheringState==='complete'){clearTimeout(timer);resolve()}}})}
+function encode(desc){return btoa(unescape(encodeURIComponent(JSON.stringify(desc))))}
+function decode(s){try{return JSON.parse(decodeURIComponent(escape(atob(s.trim()))))}catch{throw Error('Код не распознан. Проверьте, что скопировали его целиком.')}}
+$('offerBtn').onclick=async()=>{try{status('Создаём приглашение…');const p=makePC();bind(p.createDataChannel('chat'));await p.setLocalDescription(await p.createOffer());await waitIce(p);$('offerOut').value=encode(p.localDescription);status('Ожидаем ответ')}catch(e){toast(e.message);status('Не подключено')}};
+$('answerBtn').onclick=async()=>{try{const p=makePC();await p.setRemoteDescription(decode($('offerIn').value));await p.setLocalDescription(await p.createAnswer());await waitIce(p);$('answerOut').value=encode(p.localDescription);status('Ответ создан')}catch(e){toast(e.message)}};
+$('finishBtn').onclick=async()=>{try{if(!pc)throw Error('Сначала создайте код приглашения на этом устройстве.');await pc.setRemoteDescription(decode($('answerIn').value));status('Подключаемся…')}catch(e){toast(e.message)}};
+$('form').onsubmit=e=>{e.preventDefault();const v=$('text').value.trim();if(!v||!channel||channel.readyState!=='open')return;const time=Date.now();channel.send(JSON.stringify({text:v,time}));render(v,true,time);$('text').value='';$('text').focus()};
+$('text').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('form').requestSubmit()}};
+$('clearBtn').onclick=()=>{if(!confirm('Очистить сообщения на этом устройстве?'))return;$('messages').replaceChildren();const d=document.createElement('div');d.className='empty';d.id='empty';d.innerHTML='<b>Пока здесь тихо</b>Создайте соединение с собеседником, чтобы начать переписку.';$('messages').append(d)};
+})();
+</script></body></html>
