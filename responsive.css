@@ -1,0 +1,21 @@
+
+/* Responsive full-screen chat: remove the framed desktop canvas and fit viewport. */
+html,body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden;background:#e9eff2}
+.app{width:100%;max-width:none;height:100vh;height:100dvh;margin:0;border:0;border-radius:0;box-shadow:none}
+.header{padding-left:clamp(12px,3vw,28px);padding-right:clamp(12px,3vw,28px)}
+.feed{padding-left:max(14px,calc((100% - 850px)/2));padding-right:max(14px,calc((100% - 850px)/2))}
+.compose{padding-left:clamp(10px,2vw,22px);padding-right:clamp(10px,2vw,22px)}
+@media(min-width:1100px){.app{height:100dvh}.feed{background-color:#e9eff2}}
+@media(max-width:600px){
+  .app{height:100vh;height:100dvh;min-height:0}
+  .header{height:60px;min-height:60px;padding:0 12px;gap:10px}
+  .avatar{width:38px;height:38px;flex:none}
+  .headcopy strong{font-size:16px}.headcopy small{font-size:13px}
+  .head-actions{gap:8px}.head-actions .btn{min-height:42px;padding:8px 12px}
+  .feed{padding:14px 10px;overscroll-behavior:contain}
+  .msg{max-width:88%;font-size:16px;padding:9px 11px 6px}
+  .compose{padding:9px 10px calc(9px + env(safe-area-inset-bottom));gap:8px}
+  .compose input{font-size:16px;min-height:46px;padding:11px 15px}
+  .send{width:46px;height:46px;flex:none}
+  .foot{font-size:12px;padding:5px 12px}
+}
