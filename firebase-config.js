@@ -10,4 +10,7 @@ export const firebaseConfig = {
 
 // По умолчанию доступ разрешён только перечисленным Google-аккаунтам.
 // Замените примеры на email-адреса владельца базы и сохраните файл.
-export const allowedEmails = ["alekseymakmunod@gmail.com"];
+export const allowedEmails = [
+  "aleksejmaksinov174@gmail.com",
+  "alekseymakmunod@gmail.com"
+];
