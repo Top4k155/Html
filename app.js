@@ -3,7 +3,7 @@ import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signO
 import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
 import { firebaseConfig, allowedEmails } from './firebase-config.js';
 const $=s=>document.querySelector(s), login=$('#login'), appBox=$('#app'), loginError=$('#loginError'), status=$('#status'), feed=$('#feed'), messages=$('#messages'), chatError=$('#chatError');
-let auth,db,user,stopMessages,stopPin; const OWNER_EMAIL='alekseymaksinov174@gmail.com';
+let auth,db,user,stopMessages,stopPin; const OWNER_EMAIL='aleksejmaksinov174@gmail.com';
 const placeholder=!firebaseConfig.apiKey||firebaseConfig.apiKey.startsWith('ВСТАВЬТЕ')||firebaseConfig.projectId==='ВАШ-ПРОЕКТ';
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function clockMode(){try{return localStorage.getItem('chat-clock-mode')||'auto'}catch{return 'auto'}}
