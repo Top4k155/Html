@@ -6,7 +6,7 @@ const $=s=>document.querySelector(s), login=$('#login'), appBox=$('#app'), login
 let auth,db,user,stopMessages;
 const placeholder=!firebaseConfig.apiKey||firebaseConfig.apiKey.startsWith('ВСТАВЬТЕ')||firebaseConfig.projectId==='ВАШ-ПРОЕКТ';
 function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function time(ts){if(!ts)return 'сейчас';return new Intl.DateTimeFormat('ru-RU',{hour:'2-digit',minute:'2-digit'}).format(new Date(ts))}
+function time(ts){if(!ts)return 'сейчас';return new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit'}).format(new Date(ts))}
 function addMessage(id,m){if(document.querySelector(`[data-id="${CSS.escape(id)}"]`))return;const own=m.uid===user.uid;const node=document.createElement('article');node.className='msg '+(own?'mine':'other');node.dataset.id=id;node.innerHTML=`${own?'':`<div class="sender">${safe(m.name||'Участник')}</div>`}<div class="body">${safe(m.text||'')}</div><div class="time">${time(m.createdAt)}</div>`;messages.append(node);feed.scrollTop=feed.scrollHeight}
 function showError(e){const code=e?.code||'';if(code.includes('PERMISSION_DENIED')||code.includes('permission_denied'))return 'Firebase запретил доступ. Проверьте Rules в Realtime Database и что email разрешён.';if(code==='auth/unauthorized-domain')return 'Добавьте адрес сайта в Authentication → Settings → Authorized domains.';return e?.message||'Не удалось подключиться.'}
 function listen(){if(stopMessages)stopMessages();status.textContent='Подключено, слушаем сообщения';chatError.textContent='';const q=query(ref(db,'messages'),limitToLast(100));stopMessages=onChildAdded(q,s=>addMessage(s.key,s.val()||{}),e=>chatError.textContent=showError(e))}
