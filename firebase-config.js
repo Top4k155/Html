@@ -12,5 +12,6 @@ export const firebaseConfig = {
 // Замените примеры на email-адреса владельца базы и сохраните файл.
 export const allowedEmails = [
   "aleksejmaksinov174@gmail.com",
-  "alekseymakmunod@gmail.com"
+  "alekseymakmunod@gmail.com",
+  "olgamaksinova051@gmail.com
 ];
