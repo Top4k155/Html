@@ -13,5 +13,5 @@ export const firebaseConfig = {
 export const allowedEmails = [
   "aleksejmaksinov174@gmail.com",
   "alekseymakmunod@gmail.com",
-  "olgamaksinova051@gmail.com
+  "olgamaksinova051@gmail.com"
 ];
