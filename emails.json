@@ -1,0 +1,10 @@
+{
+  "database_url": "https://all823218-default-rtdb.firebaseio.com",
+  "service_account": "service-account.json",
+  "owner": "aleksejmaksinov174@gmail.com",
+  "emails": [
+    "aleksejmaksinov174@gmail.com",
+    "alekseymakmunod@gmail.com",
+    "olgamaksinova051@gmail.com"
+  ]
+}

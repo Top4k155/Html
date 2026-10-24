@@ -1,50 +1,399 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
 import { firebaseConfig, allowedEmails } from './firebase-config.js';
-const $=s=>document.querySelector(s), login=$('#login'), appBox=$('#app'), loginError=$('#loginError'), status=$('#status'), feed=$('#feed'), messages=$('#messages'), chatError=$('#chatError');
-let auth,db,user,stopMessages,stopPin; const OWNER_EMAIL='aleksejmaksinov174@gmail.com';
-const placeholder=!firebaseConfig.apiKey||firebaseConfig.apiKey.startsWith('ВСТАВЬТЕ')||firebaseConfig.projectId==='ВАШ-ПРОЕКТ';
-function safe(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-function clockMode(){try{return localStorage.getItem('chat-clock-mode')||'auto'}catch{return 'auto'}}
-function time(ts){if(!ts)return 'сейчас';const mode=clockMode();const opts={hour:'numeric',minute:'2-digit'};if(mode==='12')opts.hour12=true;if(mode==='24')opts.hour12=false;return new Intl.DateTimeFormat(undefined,opts).format(new Date(Number(ts)))}
-function refreshTimes(){document.querySelectorAll('.msg').forEach(node=>{const stamp=node.dataset.timestamp;const target=node.querySelector('.time');if(target&&stamp)target.textContent=time(stamp)})}
-function animateRemove(node){if(!node||node.dataset.removing)return;node.dataset.removing='1';const r=node.getBoundingClientRect();for(let i=0;i<18;i++){const bit=document.createElement('i');bit.className='msg-piece';bit.style.left=(r.left+Math.random()*r.width)+'px';bit.style.top=(r.top+Math.random()*r.height)+'px';bit.style.setProperty('--dx',((Math.random()-.5)*220)+'px');bit.style.setProperty('--dy',((Math.random()-.65)*190)+'px');bit.style.setProperty('--rot',((Math.random()-.5)*600)+'deg');document.body.append(bit);setTimeout(()=>bit.remove(),700)}node.classList.add('msg-removing');setTimeout(()=>node.remove(),500)}
-function closeSettings(){const panel=$('#settingsPanel');if(panel.classList.contains('hidden'))return;panel.classList.add('settings-closing');setTimeout(()=>{panel.classList.add('hidden');panel.classList.remove('settings-closing')},180)}
-function addMessage(id,m){if(document.querySelector(`[data-id="${CSS.escape(id)}"]`))return;let hidden=[];try{hidden=JSON.parse(localStorage.getItem('chat-hidden-messages')||'[]')}catch{}if(hidden.includes(id))return;const own=m.uid===user.uid;const node=document.createElement('article');node.className='msg '+(own?'mine':'other');node.dataset.id=id;node.dataset.timestamp=m.createdAt||'';node.innerHTML=`${own?'':`<div class="sender">${safe(m.name||'Участник')}</div>`}<div class="body">${safe(m.text||'')}</div><div class="time">${time(m.createdAt)}</div>`;messages.append(node);bindMessageMenu(node,id,m);feed.scrollTop=feed.scrollHeight}
-function bindMessageMenu(node,id,m){let timer,hold=false;const open=(x,y)=>{const menu=$('#messageMenu');menu.dataset.id=id;menu.dataset.own=m.uid===user.uid?'1':'0';menu.dataset.pin=m.text||'';menu.innerHTML=`<button data-action="delete-local">Удалить у меня</button>${m.uid===user.uid?'<button data-action="delete">Удалить у всех</button>':''}${user.email?.toLowerCase()===OWNER_EMAIL?'<button data-action="pin">Закрепить сообщение</button>':''}`;menu.classList.remove('hidden');menu.style.left=Math.max(8,Math.min(x,innerWidth-200))+'px';menu.style.top=Math.max(8,Math.min(y,innerHeight-menu.offsetHeight-8))+'px'};node.addEventListener('contextmenu',e=>{e.preventDefault();open(e.clientX,e.clientY)});node.addEventListener('pointerdown',e=>{hold=false;timer=setTimeout(()=>{hold=true;open(e.clientX,e.clientY)},550)});['pointerup','pointercancel','pointerleave'].forEach(ev=>node.addEventListener(ev,()=>clearTimeout(timer)));node.addEventListener('click',e=>{if(hold){e.preventDefault();e.stopPropagation();hold=false}})}
-function listenPin(){stopPin?.();stopPin=onValue(ref(db,'pinnedMessage'),snap=>{const p=snap.val(),bar=$('#pinbar');if(p?.text){bar.classList.add('visible');$('#pintext').textContent=p.text;$('#unpin').classList.toggle('hidden',user.email?.toLowerCase()!==OWNER_EMAIL)}else bar.classList.remove('visible')},e=>chatError.textContent=showError(e))}
-function showError(e){const code=e?.code||'';if(code.includes('PERMISSION_DENIED')||code.includes('permission_denied'))return 'Firebase запретил доступ. Проверьте Rules в Realtime Database и что email разрешён.';if(code==='auth/unauthorized-domain')return 'Добавьте адрес сайта в Authentication → Settings → Authorized domains.';return e?.message||'Не удалось подключиться.'}
-function listen(){if(stopMessages)stopMessages();status.textContent='Подключено, слушаем сообщения';chatError.textContent='';const q=query(ref(db,'messages'),limitToLast(100));const stopAdded=onChildAdded(q,s=>addMessage(s.key,s.val()||{}),e=>chatError.textContent=showError(e));const stopRemoved=onChildRemoved(ref(db,'messages'),s=>animateRemove(document.querySelector(`[data-id=\"${CSS.escape(s.key)}\"]`)),e=>chatError.textContent=showError(e));stopMessages=()=>{stopAdded();stopRemoved()};listenPin()}
-const provider=new GoogleAuthProvider();if(!placeholder){const firebase=initializeApp(firebaseConfig);auth=getAuth(firebase);db=getDatabase(firebase);$('#loginBtn').addEventListener('click',async e=>{e.preventDefault();loginError.textContent='';$('#loginBtn').disabled=true;try{await signInWithPopup(auth,provider)}catch(e){loginError.textContent=showError(e)}finally{$('#loginBtn').disabled=false}});onAuthStateChanged(auth,async u=>{if(!u){user=null;appBox.classList.add('hidden');login.classList.remove('hidden');if(stopMessages)stopMessages();return}const permitted=allowedEmails.map(x=>x.toLowerCase()).includes((u.email||'').toLowerCase());if(!permitted){await signOut(auth);loginError.textContent=`${u.email||'Этот аккаунт'} не добавлен в allowedEmails в firebase-config.js.`;return}user=u;login.classList.add('hidden');appBox.classList.remove('hidden');status.textContent='Соединяемся…';if(u.photoURL){$('#photo').src=u.photoURL;$('#photo').classList.remove('hidden')}listen()})}else{$('#loginBtn').addEventListener('click',e=>{e.preventDefault();loginError.textContent='Сначала укажите настройки Firebase в firebase-config.js.'});status.textContent='Настройте Firebase'}
-$('#clockMode').value=clockMode();$('#settingsBtn').onclick=()=>$('#settingsPanel').classList.remove('hidden');$('#settingsClose').onclick=closeSettings;$('#settingsPanel').onclick=e=>{if(e.target===$('#settingsPanel'))closeSettings()};$('#clockMode').onchange=e=>{const mode=e.target.value;try{localStorage.setItem('chat-clock-mode',mode)}catch{}refreshTimes()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeSettings()});
-document.addEventListener('click', async e => {
-  const menu = $('#messageMenu');
-  if (!e.target.closest('#messageMenu')) { menu.classList.add('hidden'); return; }
+
+const $ = (s) => document.querySelector(s);
+const login = $('#login');
+const appBox = $('#app');
+const loginError = $('#loginError');
+const status = $('#status');
+const feed = $('#feed');
+const messages = $('#messages');
+const chatError = $('#chatError');
+const menu = $('#messageMenu');
+
+let auth;
+let db;
+let user;
+let stopMessages;
+let stopPin;
+let stopConn;
+let stickToBottom = true;
+let menuPin = '';
+const OWNER_EMAIL = String(allowedEmails[0] || 'aleksejmaksinov174@gmail.com').toLowerCase();
+const placeholder = !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('ВСТАВЬТЕ') || firebaseConfig.projectId === 'ВАШ-ПРОЕКТ';
+
+function safe(s) {
+  return String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function clockMode() {
+  try { return localStorage.getItem('chat-clock-mode') || 'auto'; } catch { return 'auto'; }
+}
+function time(ts) {
+  const n = Number(ts);
+  if (!Number.isFinite(n) || n <= 0) return 'сейчас';
+  try {
+    const mode = clockMode();
+    const opts = { hour: 'numeric', minute: '2-digit' };
+    if (mode === '12') opts.hour12 = true;
+    if (mode === '24') opts.hour12 = false;
+    return new Intl.DateTimeFormat(undefined, opts).format(new Date(n));
+  } catch {
+    return 'сейчас';
+  }
+}
+function refreshTimes() {
+  document.querySelectorAll('.msg').forEach((node) => {
+    const stamp = node.dataset.timestamp;
+    const target = node.querySelector('.time');
+    if (target && stamp) target.textContent = time(stamp);
+  });
+}
+function hiddenKey() {
+  return 'chat-hidden-messages:' + (user?.uid || 'none');
+}
+function hiddenIds() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(hiddenKey()) || '[]');
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+function rememberHidden(id) {
+  const hidden = [...new Set([...hiddenIds(), id])].slice(-500);
+  try { localStorage.setItem(hiddenKey(), JSON.stringify(hidden)); } catch {}
+}
+function isOwn(m) {
+  return typeof user?.uid === 'string' && user.uid.length > 0 && m?.uid === user.uid;
+}
+function isOwner() {
+  return Boolean(user?.email) && user.email.toLowerCase() === OWNER_EMAIL;
+}
+function showError(e) {
+  const code = e?.code || '';
+  if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return 'Вход отменён.';
+  if (code === 'auth/network-request-failed') return 'Нет сети. Проверьте интернет и попробуйте снова.';
+  if (code.includes('PERMISSION_DENIED') || code.includes('permission_denied')) return 'Firebase запретил доступ. Проверьте Rules в Realtime Database и что email разрешён.';
+  if (code === 'auth/unauthorized-domain') return 'Добавьте адрес сайта в Authentication → Settings → Authorized domains.';
+  return e?.message || 'Не удалось подключиться.';
+}
+function fail(e) {
+  chatError.textContent = showError(e);
+  if (String(e?.code || '').includes('permission')) status.textContent = 'нет доступа к базе';
+}
+function animateRemove(node) {
+  if (!node || node.dataset.removing) return;
+  node.dataset.removing = '1';
+  const r = node.getBoundingClientRect();
+  for (let i = 0; i < 18; i++) {
+    const bit = document.createElement('i');
+    bit.className = 'msg-piece';
+    bit.style.left = (r.left + Math.random() * r.width) + 'px';
+    bit.style.top = (r.top + Math.random() * r.height) + 'px';
+    bit.style.setProperty('--dx', ((Math.random() - 0.5) * 220) + 'px');
+    bit.style.setProperty('--dy', ((Math.random() - 0.65) * 190) + 'px');
+    bit.style.setProperty('--rot', ((Math.random() - 0.5) * 600) + 'deg');
+    document.body.append(bit);
+    setTimeout(() => bit.remove(), 700);
+  }
+  node.classList.add('msg-removing');
+  setTimeout(() => node.remove(), 500);
+}
+function closeMenu() {
+  menu.classList.add('hidden');
+  delete menu.dataset.id;
+  delete menu.dataset.own;
+  menuPin = '';
+}
+function safeId(id) {
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(id);
+}
+function closeSettings() {
+  const panel = $('#settingsPanel');
+  if (!panel || panel.classList.contains('hidden')) return;
+  panel.classList.add('settings-closing');
+  setTimeout(() => {
+    panel.classList.add('hidden');
+    panel.classList.remove('settings-closing');
+  }, 180);
+}
+function nearBottom() {
+  return feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120;
+}
+function addMessage(id, m) {
+  if (!id || !user) return;
+  if (document.querySelector(`[data-id="${CSS.escape(id)}"]`)) return;
+  if (hiddenIds().includes(id)) return;
+  const own = isOwn(m);
+  const follow = stickToBottom || own || nearBottom();
+  const node = document.createElement('article');
+  node.className = 'msg ' + (own ? 'mine' : 'other');
+  node.dataset.id = id;
+  node.dataset.timestamp = Number.isFinite(Number(m.createdAt)) ? String(Number(m.createdAt)) : '';
+  const who = safe(m.name || m.email || 'Участник');
+  node.innerHTML = `${own ? '' : `<div class="sender">${who}</div>`}<div class="body">${safe(m.text || '')}</div><div class="time">${time(m.createdAt)}</div>`;
+  messages.append(node);
+  bindMessageMenu(node, id, m);
+  if (follow) feed.scrollTop = feed.scrollHeight;
+}
+function bindMessageMenu(node, id, m) {
+  let timer;
+  let hold = false;
+  let startX = 0;
+  let startY = 0;
+  const open = (x, y) => {
+    if (!user) return;
+    menu.dataset.id = id;
+    menu.dataset.own = isOwn(m) ? '1' : '0';
+    menuPin = String(m.text || '');
+    menu.innerHTML = `<button type="button" data-action="delete-local">Удалить у меня</button>${isOwn(m) ? '<button type="button" data-action="delete">Удалить у всех</button>' : ''}${isOwner() ? '<button type="button" data-action="pin">Закрепить сообщение</button>' : ''}`;
+    menu.classList.remove('hidden');
+    const width = menu.offsetWidth || 180;
+    const height = menu.offsetHeight || 44;
+    menu.style.left = Math.max(8, Math.min(x, innerWidth - width - 8)) + 'px';
+    menu.style.top = Math.max(8, Math.min(y, innerHeight - height - 8)) + 'px';
+  };
+  node.addEventListener('contextmenu', (e) => { e.preventDefault(); open(e.clientX, e.clientY); });
+  node.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    hold = false;
+    startX = e.clientX;
+    startY = e.clientY;
+    timer = setTimeout(() => { hold = true; open(e.clientX, e.clientY); }, 550);
+  });
+  node.addEventListener('pointermove', (e) => {
+    if (Math.hypot(e.clientX - startX, e.clientY - startY) > 12) clearTimeout(timer);
+  });
+  node.addEventListener('pointerup', () => clearTimeout(timer));
+  node.addEventListener('pointercancel', () => clearTimeout(timer));
+  node.addEventListener('click', (e) => {
+    if (!hold) return;
+    e.preventDefault();
+    e.stopPropagation();
+    hold = false;
+  });
+}
+function listenPin() {
+  stopPin?.();
+  stopPin = onValue(ref(db, 'pinnedMessage'), (snap) => {
+    const p = snap.val();
+    const bar = $('#pinbar');
+    if (p?.text) {
+      bar.classList.add('visible');
+      $('#pintext').textContent = String(p.text);
+      $('#unpin').classList.toggle('hidden', !isOwner());
+    } else {
+      bar.classList.remove('visible');
+      $('#pintext').textContent = '';
+    }
+  }, fail);
+}
+function listen() {
+  stopMessages?.();
+  messages.replaceChildren();
+  stickToBottom = true;
+  status.textContent = 'Соединяемся…';
+  chatError.textContent = '';
+  const q = query(ref(db, 'messages'), limitToLast(100));
+  const stopAdded = onChildAdded(q, (s) => addMessage(s.key, s.val() || {}), fail);
+  const stopRemoved = onChildRemoved(ref(db, 'messages'), (s) => {
+    animateRemove(document.querySelector(`[data-id="${CSS.escape(s.key)}"]`));
+  }, fail);
+  stopMessages = () => { stopAdded(); stopRemoved(); };
+  listenPin();
+  stopConn?.();
+  stopConn = onValue(ref(db, '.info/connected'), (snap) => {
+    status.textContent = snap.val() ? 'Подключено' : 'Нет сети, ждём связь';
+  });
+  setTimeout(() => {
+    stickToBottom = false;
+    feed.scrollTop = feed.scrollHeight;
+  }, 0);
+}
+function stopAll() {
+  stopMessages?.();
+  stopMessages = null;
+  stopPin?.();
+  stopPin = null;
+  stopConn?.();
+  stopConn = null;
+  user = null;
+  messages.replaceChildren();
+  $('#pinbar')?.classList.remove('visible');
+  $('#pintext').textContent = '';
+  closeMenu();
+  closeSettings();
+  const photo = $('#photo');
+  photo.classList.add('hidden');
+  photo.removeAttribute('src');
+}
+function showPhoto(url) {
+  const photo = $('#photo');
+  if (typeof url === 'string' && url.startsWith('https://')) {
+    photo.src = url;
+    photo.classList.remove('hidden');
+    return;
+  }
+  photo.classList.add('hidden');
+  photo.removeAttribute('src');
+}
+function bindViewport() {
+  const vv = window.visualViewport;
+  if (!vv) return;
+  const apply = () => {
+    appBox.style.height = Math.round(vv.height) + 'px';
+    appBox.style.transform = vv.offsetTop ? `translateY(${Math.round(vv.offsetTop)}px)` : '';
+    if (document.activeElement === $('#text')) feed.scrollTop = feed.scrollHeight;
+  };
+  vv.addEventListener('resize', apply);
+  vv.addEventListener('scroll', apply);
+  apply();
+}
+function wantsRedirect() {
+  return matchMedia('(pointer:coarse)').matches || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+}
+
+bindViewport();
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ prompt: 'select_account' });
+
+if (!placeholder) {
+  const firebase = initializeApp(firebaseConfig);
+  auth = getAuth(firebase);
+  db = getDatabase(firebase);
+  const loginBtn = $('#loginBtn');
+  loginBtn.disabled = true;
+  getRedirectResult(auth).catch((e) => { loginError.textContent = showError(e); }).finally(() => { loginBtn.disabled = false; });
+  loginBtn.addEventListener('click', async (e) => {
+    e.preventDefault();
+    loginError.textContent = '';
+    loginBtn.disabled = true;
+    try {
+      if (wantsRedirect()) await signInWithRedirect(auth, provider);
+      else {
+        try { await signInWithPopup(auth, provider); }
+        catch (err) {
+          if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/operation-not-supported-in-this-environment') await signInWithRedirect(auth, provider);
+          else throw err;
+        }
+      }
+    } catch (err) {
+      loginError.textContent = showError(err);
+    } finally {
+      loginBtn.disabled = false;
+    }
+  });
+  onAuthStateChanged(auth, async (u) => {
+    if (!u) {
+      stopAll();
+      appBox.classList.add('hidden');
+      login.classList.remove('hidden');
+      return;
+    }
+    const permitted = allowedEmails.map((x) => String(x).toLowerCase()).includes((u.email || '').toLowerCase());
+    if (!permitted) {
+      await signOut(auth);
+      loginError.textContent = `${u.email || 'Этот аккаунт'} не добавлен в allowedEmails в firebase-config.js.`;
+      return;
+    }
+    if (user?.uid === u.uid && stopMessages) return;
+    stopMessages?.();
+    stopMessages = null;
+    messages.replaceChildren();
+    user = u;
+    login.classList.add('hidden');
+    appBox.classList.remove('hidden');
+    status.textContent = u.email || 'Вход выполнен';
+    showPhoto(u.photoURL);
+    listen();
+  });
+} else {
+  $('#loginBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    loginError.textContent = 'Сначала укажите настройки Firebase в firebase-config.js.';
+  });
+  status.textContent = 'Настройте Firebase';
+}
+
+$('#clockMode').value = ['auto', '12', '24'].includes(clockMode()) ? clockMode() : 'auto';
+$('#settingsBtn').onclick = () => $('#settingsPanel').classList.remove('hidden');
+$('#settingsClose').onclick = closeSettings;
+$('#settingsPanel').onclick = (e) => { if (e.target === $('#settingsPanel')) closeSettings(); };
+$('#clockMode').onchange = (e) => {
+  const mode = e.target.value;
+  try { localStorage.setItem('chat-clock-mode', mode); } catch {}
+  refreshTimes();
+};
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  closeSettings();
+  closeMenu();
+});
+feed.addEventListener('scroll', closeMenu, { passive: true });
+window.addEventListener('resize', closeMenu);
+
+document.addEventListener('click', async (e) => {
+  if (!e.target.closest('#messageMenu')) {
+    closeMenu();
+    return;
+  }
   const action = e.target.closest('button')?.dataset.action;
   const id = menu.dataset.id;
-  if (!action || !id) return;
-  menu.classList.add('hidden');
+  const pinText = menuPin;
+  const own = menu.dataset.own === '1';
+  if (!action || !safeId(id) || !user) return;
+  closeMenu();
   try {
     if (action === 'delete-local') {
-      let hidden = [];
-      try { hidden = JSON.parse(localStorage.getItem('chat-hidden-messages') || '[]'); } catch {}
-      if (!Array.isArray(hidden)) hidden = [];
-      hidden = [...new Set([...hidden, id])];
-      try { localStorage.setItem('chat-hidden-messages', JSON.stringify(hidden)); } catch {}
+      rememberHidden(id);
       animateRemove(document.querySelector(`[data-id="${CSS.escape(id)}"]`));
       return;
     }
     if (action === 'delete') {
+      if (!own) return;
       if (!confirm('Удалить это сообщение у всех участников?')) return;
       await remove(ref(db, `messages/${id}`));
-      animateRemove(document.querySelector(`[data-id="${CSS.escape(id)}"]`));
       return;
     }
     if (action === 'pin') {
-      await set(ref(db, 'pinnedMessage'), { text: menu.dataset.pin, by: user.email, createdAt: Date.now() });
+      if (!isOwner()) return;
+      const text = pinText.trim().slice(0, 2000);
+      if (!text) return;
+      await set(ref(db, 'pinnedMessage'), { text, by: user.email, createdAt: Date.now() });
     }
-  } catch (err) { chatError.textContent = showError(err); }
+  } catch (err) {
+    fail(err);
+  }
 });
-$('#unpin').onclick=async()=>{if(user?.email?.toLowerCase()===OWNER_EMAIL)try{await remove(ref(db,'pinnedMessage'))}catch(e){chatError.textContent=showError(e)}};
-$('#logout').onclick=()=>auth&&signOut(auth);$('#form').addEventListener('submit',async e=>{e.preventDefault();const input=$('#text'),text=input.value.trim();if(!text||!user)return;input.disabled=true;try{await push(ref(db,'messages'),{uid:user.uid,name:user.displayName||user.email||'Участник',text,createdAt:serverTimestamp()});input.value='';chatError.textContent=''}catch(err){chatError.textContent=showError(err)}finally{input.disabled=false;input.focus()}});
+
+$('#unpin').onclick = async () => {
+  if (!isOwner()) return;
+  try { await remove(ref(db, 'pinnedMessage')); }
+  catch (e) { fail(e); }
+};
+$('#logout').onclick = () => auth && signOut(auth);
+$('#form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const input = $('#text');
+  const text = input.value.trim().slice(0, 2000);
+  if (!text || !user || !db) return;
+  input.disabled = true;
+  try {
+    await push(ref(db, 'messages'), {
+      uid: user.uid,
+      name: user.displayName || user.email || 'Участник',
+      email: user.email || '',
+      text,
+      createdAt: serverTimestamp()
+    });
+    input.value = '';
+    chatError.textContent = '';
+  } catch (err) {
+    fail(err);
+  } finally {
+    input.disabled = false;
+    input.focus();
+  }
+});
