@@ -1,7 +1,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
-import { firebaseConfig, allowedEmails } from './firebase-config.js';
+import { firebaseConfig } from './firebase-config.js';
 
 const $ = (s) => document.querySelector(s);
 const login = $('#login');
@@ -21,7 +21,7 @@ let stopPin;
 let stopConn;
 let stickToBottom = true;
 let menuPin = '';
-const OWNER_EMAIL = String(allowedEmails[0] || 'aleksejmaksinov174@gmail.com').toLowerCase();
+const OWNER_EMAIL = 'aleksejmaksinov174@gmail.com';
 const placeholder = !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('ВСТАВЬТЕ') || firebaseConfig.projectId === 'ВАШ-ПРОЕКТ';
 
 function safe(s) {
@@ -290,12 +290,6 @@ if (!placeholder) {
       stopAll();
       appBox.classList.add('hidden');
       login.classList.remove('hidden');
-      return;
-    }
-    const permitted = allowedEmails.map((x) => String(x).toLowerCase()).includes((u.email || '').toLowerCase());
-    if (!permitted) {
-      await signOut(auth);
-      loginError.textContent = `${u.email || 'Этот аккаунт'} не добавлен в allowedEmails в firebase-config.js.`;
       return;
     }
     if (user?.uid === u.uid && stopMessages) return;
