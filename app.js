@@ -1,6 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
-import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
+import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved, get } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
 import { firebaseConfig } from './firebase-config.js';
 
 const $ = (s) => document.querySelector(s);
@@ -75,7 +75,7 @@ function showError(e) {
   const code = e?.code || '';
   if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') return 'Вход отменён.';
   if (code === 'auth/network-request-failed') return 'Нет сети. Проверьте интернет и попробуйте снова.';
-  if (code.includes('PERMISSION_DENIED') || code.includes('permission_denied')) return 'Firebase запретил доступ. Проверьте Rules в Realtime Database и что email разрешён.';
+  if (code.includes('PERMISSION_DENIED') || code.includes('permission_denied') || code.includes('permission-denied')) return 'Вы не в разрешенном списке пользователей, Обратитесь к администратору';
   if (code === 'auth/unauthorized-domain') return 'Добавьте адрес сайта в Authentication → Settings → Authorized domains.';
   return e?.message || 'Не удалось подключиться.';
 }
@@ -285,23 +285,66 @@ if (!placeholder) {
       loginBtn.disabled = false;
     }
   });
-  onAuthStateChanged(auth, async (u) => {
-    if (!u) {
-      stopAll();
-      appBox.classList.add('hidden');
-      login.classList.remove('hidden');
-      return;
-    }
+  const ACCESS_DENIED = 'Вы не в разрешенном списке пользователей, Обратитесь к администратору';
+  let pendingLoginError = '';
+  let checkingAccess = false;
+  function deniedByRules(err) {
+    const blob = `${err?.code || ''} ${err?.message || ''}`;
+    return /permission[-_ ]denied/i.test(blob);
+  }
+  async function openChatIfAllowed(u) {
+    if (!u || checkingAccess) return;
     if (user?.uid === u.uid && stopMessages) return;
+    checkingAccess = true;
+    login.classList.remove('hidden');
+    appBox.classList.add('hidden');
+    loginError.textContent = 'Проверяем доступ…';
+    loginBtn.disabled = true;
+    try {
+      await get(query(ref(db, 'messages'), limitToLast(1)));
+    } catch (err) {
+      login.classList.remove('hidden');
+      appBox.classList.add('hidden');
+      if (deniedByRules(err)) {
+        pendingLoginError = ACCESS_DENIED;
+        loginError.textContent = ACCESS_DENIED;
+        try { await signOut(auth); } catch {}
+        return;
+      }
+      loginError.textContent = showError(err);
+      return;
+    } finally {
+      checkingAccess = false;
+      loginBtn.disabled = false;
+    }
+    if (auth.currentUser?.uid !== u.uid) return;
     stopMessages?.();
     stopMessages = null;
     messages.replaceChildren();
     user = u;
+    loginError.textContent = '';
     login.classList.add('hidden');
     appBox.classList.remove('hidden');
     status.textContent = u.email || 'Вход выполнен';
     showPhoto(u.photoURL);
     listen();
+  }
+  loginBtn.addEventListener('click', async (e) => {
+    if (!auth.currentUser) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    await openChatIfAllowed(auth.currentUser);
+  }, true);
+  onAuthStateChanged(auth, (u) => {
+    if (!u) {
+      stopAll();
+      appBox.classList.add('hidden');
+      login.classList.remove('hidden');
+      loginError.textContent = pendingLoginError;
+      pendingLoginError = '';
+      return;
+    }
+    openChatIfAllowed(u);
   });
 } else {
   $('#loginBtn').addEventListener('click', (e) => {
@@ -319,6 +362,22 @@ $('#clockMode').onchange = (e) => {
   const mode = e.target.value;
   try { localStorage.setItem('chat-clock-mode', mode); } catch {}
   refreshTimes();
+};
+function themeMode() {
+  try { return localStorage.getItem('chat-theme') === 'dark' ? 'dark' : 'light'; } catch { return 'light'; }
+}
+function applyTheme(mode) {
+  const theme = mode === 'dark' ? 'dark' : 'light';
+  document.documentElement.dataset.theme = theme;
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.content = theme === 'dark' ? '#0e1621' : '#f6f7f9';
+}
+applyTheme(themeMode());
+$('#themeMode').value = themeMode();
+$('#themeMode').onchange = (e) => {
+  const mode = e.target.value === 'dark' ? 'dark' : 'light';
+  try { localStorage.setItem('chat-theme', mode); } catch {}
+  applyTheme(mode);
 };
 document.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
