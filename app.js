@@ -1,7 +1,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved, get } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
-import { firebaseConfig } from './firebase-config.js';
+import { firebaseConfig, ownerEmail } from './firebase-config.js';
 
 const $ = (s) => document.querySelector(s);
 const login = $('#login');
@@ -21,7 +21,8 @@ let stopPin;
 let stopConn;
 let stickToBottom = true;
 let menuPin = '';
-const OWNER_EMAIL = 'aleksejmaksinov174@gmail.com';
+// Владельца держим в одном месте — firebase-config.js, рядом с параметрами проекта.
+const OWNER_EMAIL = String(ownerEmail || '').toLowerCase();
 const placeholder = !firebaseConfig.apiKey || firebaseConfig.apiKey.startsWith('ВСТАВЬТЕ') || firebaseConfig.projectId === 'ВАШ-ПРОЕКТ';
 
 function safe(s) {
@@ -32,7 +33,7 @@ function clockMode() {
 }
 function time(ts) {
   const n = Number(ts);
-  if (!Number.isFinite(n) || n <= 0) return 'сейчас';
+  if (!Number.isFinite(n) || n <= 0) return '';
   try {
     const mode = clockMode();
     const opts = { hour: 'numeric', minute: '2-digit' };
@@ -69,7 +70,7 @@ function isOwn(m) {
   return typeof user?.uid === 'string' && user.uid.length > 0 && m?.uid === user.uid;
 }
 function isOwner() {
-  return Boolean(user?.email) && user.email.toLowerCase() === OWNER_EMAIL;
+  return Boolean(OWNER_EMAIL) && Boolean(user?.email) && user.email.toLowerCase() === OWNER_EMAIL;
 }
 function showError(e) {
   const code = e?.code || '';
@@ -138,9 +139,13 @@ function refreshSenders() {
     prev = uid;
   }
 }
+function findMessage(id) {
+  if (!id) return null;
+  return messages.querySelector(`[data-id="${CSS.escape(id)}"]`);
+}
 function addMessage(id, m) {
   if (!id || !user) return;
-  if (document.querySelector(`[data-id="${CSS.escape(id)}"]`)) return;
+  if (findMessage(id)) return;
   if (hiddenIds().includes(id)) return;
   const own = isOwn(m);
   const follow = stickToBottom || own || nearBottom();
@@ -217,11 +222,13 @@ function listen() {
   chatError.textContent = '';
   const q = query(ref(db, 'messages'), limitToLast(100));
   const stopAdded = onChildAdded(q, (s) => addMessage(s.key, s.val() || {}), fail);
-  const stopRemoved = onChildRemoved(ref(db, 'messages'), (s) => {
-    animateRemove(document.querySelector(`[data-id="${CSS.escape(s.key)}"]`));
+  // Удаления слушаем на том же ограниченном запросе, иначе клиент скачивает всю переписку.
+  const stopRemoved = onChildRemoved(q, (s) => {
+    animateRemove(findMessage(s.key));
   }, fail);
   stopMessages = () => { stopAdded(); stopRemoved(); };
   listenPin();
+  refreshEmpty();
   stopConn?.();
   stopConn = onValue(ref(db, '.info/connected'), (snap) => {
     status.textContent = snap.val() ? 'Подключено' : 'Нет сети, ждём связь';
@@ -420,7 +427,7 @@ document.addEventListener('click', async (e) => {
   try {
     if (action === 'delete-local') {
       rememberHidden(id);
-      animateRemove(document.querySelector(`[data-id="${CSS.escape(id)}"]`));
+      animateRemove(findMessage(id));
       return;
     }
     if (action === 'delete') {

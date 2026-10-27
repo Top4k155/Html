@@ -8,3 +8,8 @@ export const firebaseConfig = {
   projectId: "all823218",
   appId: "1:887986973315:web:ffb5229794697a80b289b6"
 };
+
+// Владелец чата: может закреплять и откреплять сообщения.
+// Это единственное место, где адрес вписан руками: allow_emails.py при команде
+// owner переписывает эту строку сам, поэтому сайт и правила базы не разъезжаются.
+export const ownerEmail = "aleksejmaksinov174@gmail.com";

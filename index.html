@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content"><meta name="theme-color" content="#f6f7f9"><meta name="color-scheme" content="light dark"><script>(function(){var t="light";try{t=localStorage.getItem("chat-theme")||"light"}catch(e){}if(t!=="dark")t="light";document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#0e1621":"#f6f7f9"})();</script><title>Мой чат</title><meta name="description" content="Личный чат. Вход через Google, сообщения видят только адреса из правил базы.">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content"><meta name="theme-color" content="#f6f7f9"><meta name="color-scheme" content="light"><script>(function(){var t="light";try{t=localStorage.getItem("chat-theme")||"light"}catch(e){}if(t!=="dark")t="light";document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#0e1621":"#f6f7f9";var c=document.querySelector('meta[name="color-scheme"]');if(c)c.content=t})();</script><title>Мой чат</title><meta name="description" content="Личный чат. Вход через Google, сообщения видят только адреса из правил базы.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://all823218-default-rtdb.firebaseio.com" crossorigin>
@@ -78,7 +78,7 @@ html[data-theme="dark"] .empty{background:#17212bcc;color:#d5dee6}
 .compose input:focus-visible{outline-offset:-3px}
 .msg:focus-visible{outline:2px solid var(--blue)}
 @media(prefers-contrast:more){:root{--muted:#546672;--line:#c8d2da}}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.sr-only{position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
 </style>
 </head><body>
 <div id="login" class="login"><div class="brand"><span class="logo" aria-hidden="true">Ч</span> Мой чат</div><h1>Войти в чат</h1><p class="muted">Войдите через Google, чтобы читать и отправлять сообщения.</p><button id="loginBtn" class="btn primary">Продолжить с Google</button><div id="loginError" class="error"></div><p class="muted" style="font-size:13px;margin:18px 0 0">Доступ есть только у адресов, добавленных в правила базы.</p></div>

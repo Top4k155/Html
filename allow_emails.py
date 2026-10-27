@@ -21,7 +21,9 @@ SETTINGS = HERE / "emails.json"
 RULES_FILE = HERE / "database.rules.json"
 
 EMAIL_RE = re.compile(r"^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$")
-EMAIL_IN_RULES = re.compile(r"auth\.token\.email\s*==\s*'([^']+)'")
+EMAIL_IN_RULES = re.compile(
+    r"""auth\.token\.email\s*==\s*(?:'([^']+)'|"([^"]+)")"""
+)
 SCOPES = [
     "https://www.googleapis.com/auth/firebase.database",
     "https://www.googleapis.com/auth/userinfo.email",
@@ -66,7 +68,16 @@ def load() -> dict:
     emails = []
     for item in data.get("emails", []):
         emails.append(normalize_email(item))
-    owner = normalize_email(data.get("owner") or emails[0])
+    owner_raw = (data.get("owner") or "").strip()
+    if owner_raw:
+        owner = normalize_email(owner_raw)
+    elif emails:
+        owner = emails[0]
+    else:
+        raise SystemExit(
+            "В emails.json пустой список почт и не указан владелец.\n"
+            'Добавьте владельца командой: python allow_emails.py owner name@gmail.com'
+        )
     if owner not in emails:
         emails.insert(0, owner)
     data["owner"] = owner
@@ -187,8 +198,24 @@ def set_owner(data: dict, raw: str) -> None:
     data["owner"] = email
     save(data)
     write_rules_file(data)
+    sync_owner_to_site(email)
     print(f"Владелец: {email}")
     print("Закреплять сообщения сможет только эта почта. Опубликуйте правила.")
+
+
+def sync_owner_to_site(owner: str) -> None:
+    """Переписать владельца в firebase-config.js, чтобы сайт и правила совпадали."""
+    config = HERE / "firebase-config.js"
+    if not config.exists():
+        return
+    text = config.read_text(encoding="utf-8")
+    pattern = re.compile(r'(export\s+const\s+ownerEmail\s*=\s*)"[^"]*"')
+    if not pattern.search(text):
+        print(f"В {config.name} нет строки ownerEmail, сайт о владельце не узнает.")
+        print(f'Добавьте вручную: export const ownerEmail = "{owner}";')
+        return
+    config.write_text(pattern.sub(rf'\1"{owner}"', text, count=1), encoding="utf-8")
+    print(f"Владелец записан и в {config.name}: сайт узнает его без пересборки.")
 
 
 def key_path_of(data: dict) -> Path:
@@ -210,7 +237,10 @@ def clock_skew():
     import requests
 
     response = requests.head("https://www.google.com", timeout=15)
-    server = parsedate_to_datetime(response.headers["Date"])
+    raw_date = response.headers.get("Date")
+    if not raw_date:
+        raise RuntimeError("Google не прислал заголовок Date, сверить часы не удалось")
+    server = parsedate_to_datetime(raw_date)
     if server.tzinfo is None:
         server = server.replace(tzinfo=timezone.utc)
     local = datetime.now(timezone.utc)
@@ -246,7 +276,8 @@ def access_token(key_path: Path) -> str:
 def emails_in_text(text: str) -> list[str]:
     found = []
     for match in EMAIL_IN_RULES.finditer(text):
-        email = match.group(1).strip().lower()
+        raw = match.group(1) or match.group(2) or ""
+        email = raw.strip().lower()
         if EMAIL_RE.fullmatch(email) and email not in found:
             found.append(email)
     return found
@@ -311,8 +342,9 @@ def pull_from_firebase(data: dict) -> dict:
     added = [email for email in remote if email not in local]
     data["emails"] = merged
     data["owner"] = owner if owner in merged else merged[0]
+    # Только emails.json: локальный database.rules.json при чтении базы не трогаем,
+    # иначе в файл попадают почты, которых в базе нет, и это уходит в коммит.
     save(data)
-    write_rules_file(data)
     if added:
         print("С базы (то, что меняли на телефоне) подтянуто:")
         for email in added:
@@ -356,7 +388,8 @@ def publish(data: dict) -> None:
         print(f"Firebase отказал: {response.status_code}")
         print(response.text[:800])
         print("Ключ должен быть от этого же проекта, роль Editor или Firebase Admin.")
-        raise SystemExit(1)
+        # Не SystemExit: из меню нужно вернуться к пунктам, а не выйти из программы.
+        raise PermissionError("Firebase не принял правила")
     print("Правила опубликованы. Этот список теперь и в базе, и на компьютере.")
     print_list(data)
 
@@ -405,7 +438,7 @@ def menu(data: dict) -> None:
 def run(action, *args) -> None:
     try:
         action(*args)
-    except ValueError as error:
+    except (ValueError, PermissionError, RuntimeError) as error:
         print(error)
 
 
