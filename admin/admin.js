@@ -11,11 +11,8 @@ const EMAIL_RE = /^[a-z0-9._%+\-]+@[a-z0-9.\-]+\.[a-z]{2,}$/;
 const DEFAULT_OWNER = String(ownerEmail || '').toLowerCase();
 // Пока в базе нет записи access/emails, действует этот список: ровно те почты,
 // что были прописаны в правилах раньше, чтобы после публикации никто не потерял доступ.
-const DEFAULT_EMAILS = [
-  'aleksejmaksinov174@gmail.com',
-  'alekseymakmunod@gmail.com',
-  'olgamaksinova051@gmail.com',
-].filter((e, i, a) => a.indexOf(e) === i);
+// Зашитых почт в правилах больше нет: доступ решают только записи в базе.
+const DEFAULT_EMAILS = [];
 
 let auth;
 let db;
@@ -168,10 +165,10 @@ async function log(action, text) {
 // проверка exists() стоит перед contains() и null никогда не вызывается.
 function allowExpr() {
   const list = "root.child('access/emails')";
-  const legacy = DEFAULT_EMAILS.map((e) => `auth.token.email == '${e}'`).join(' || ');
   return (
     'auth != null && auth.token.email_verified == true && ('
-    + `(${list}.exists() == false && (${legacy}))`
+    + `auth.token.email == '${DEFAULT_OWNER}'`
+    + " || auth.token.email == root.child('access/owner').val()"
     + ' || '
     + `(${list}.exists() == true && ${list}.val().contains(',' + auth.token.email + ','))`
     + ')'
