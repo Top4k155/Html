@@ -1,0 +1,14 @@
+# Ключ владельца Firebase: даёт полный доступ к базе. В репозиторий не попадает.
+service-account.json
+service-account*.json
+*-service-account.json
+
+# Личный список почт: адреса живут в Firebase, а не в публичном репозитории.
+emails.json
+
+# Служебное
+__pycache__/
+*.pyc
+Thumbs.db
+desktop.ini
+.DS_Store
