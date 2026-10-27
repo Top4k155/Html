@@ -71,6 +71,7 @@ function loadState(snapshot) {
   render();
 }
 function dirty() {
+  if (!state.exists) return true; // список ещё ни разу не сохранён в базу
   return draft.length !== state.emails.length || draft.some((e, i) => e !== state.emails[i]);
 }
 function render() {
@@ -227,7 +228,9 @@ function startWatch() {
   stopAccess?.();
   stopLog?.();
   stopAccess = onValue(ref(db, 'access'), (snap) => {
-    if (dirty()) return; // не затираем несохранённые правки
+    // Пока локальная копия не совпала с базой, не перерисовываем: иначе первая
+    // же правка стирается первым снимком базы.
+    if (state.exists && dirty()) return;
     loadState(snap.val());
   }, (err) => {
     $('#listError').textContent = showError(err);
