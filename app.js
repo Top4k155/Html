@@ -99,7 +99,7 @@ function animateRemove(node) {
     setTimeout(() => bit.remove(), 700);
   }
   node.classList.add('msg-removing');
-  setTimeout(() => node.remove(), 500);
+  setTimeout(() => { node.remove(); refreshEmpty(); refreshSenders(); }, 500);
 }
 function closeMenu() {
   menu.classList.add('hidden');
@@ -122,6 +122,22 @@ function closeSettings() {
 function nearBottom() {
   return feed.scrollHeight - feed.scrollTop - feed.clientHeight < 120;
 }
+function refreshEmpty() {
+  const empty = document.getElementById('empty');
+  if (!empty) return;
+  empty.classList.toggle('hidden', messages.children.length > 0);
+}
+function refreshSenders() {
+  let prev = null;
+  for (const node of messages.children) {
+    const sender = node.querySelector('.sender');
+    if (!sender) { prev = null; continue; }
+    const uid = node.dataset.uid || '';
+    const same = prev !== null && uid !== '' && uid === prev;
+    sender.classList.toggle('sr-only', same);
+    prev = uid;
+  }
+}
 function addMessage(id, m) {
   if (!id || !user) return;
   if (document.querySelector(`[data-id="${CSS.escape(id)}"]`)) return;
@@ -131,11 +147,14 @@ function addMessage(id, m) {
   const node = document.createElement('article');
   node.className = 'msg ' + (own ? 'mine' : 'other');
   node.dataset.id = id;
+  node.dataset.uid = typeof m.uid === 'string' ? m.uid : '';
   node.dataset.timestamp = Number.isFinite(Number(m.createdAt)) ? String(Number(m.createdAt)) : '';
   const who = safe(m.name || m.email || 'Участник');
   node.innerHTML = `${own ? '' : `<div class="sender">${who}</div>`}<div class="body">${safe(m.text || '')}</div><div class="time">${time(m.createdAt)}</div>`;
   messages.append(node);
   bindMessageMenu(node, id, m);
+  refreshSenders();
+  refreshEmpty();
   if (follow) feed.scrollTop = feed.scrollHeight;
 }
 function bindMessageMenu(node, id, m) {
