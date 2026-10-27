@@ -19,6 +19,7 @@ let user;
 let stopMessages;
 let stopPin;
 let stopConn;
+let stopOwner;
 let stickToBottom = true;
 let menuPin = '';
 // Владельца держим в одном месте — firebase-config.js, рядом с параметрами проекта.
@@ -69,8 +70,28 @@ function rememberHidden(id) {
 function isOwn(m) {
   return typeof user?.uid === 'string' && user.uid.length > 0 && m?.uid === user.uid;
 }
+let dbOwner = String(OWNER_EMAIL || '');
 function isOwner() {
-  return Boolean(OWNER_EMAIL) && Boolean(user?.email) && user.email.toLowerCase() === OWNER_EMAIL;
+  return Boolean(dbOwner) && Boolean(user?.email) && user.email.toLowerCase() === dbOwner;
+}
+// Владелец может быть переназначен в админ-панели: она пишет access/owner в базу,
+// поэтому закрепление и ссылка на панель переходят к новому владельцу сами.
+function watchOwner() {
+  try {
+    return onValue(ref(db, 'access/owner'), (snap) => {
+      const next = String(snap.val() || '').toLowerCase();
+      if (next && next !== dbOwner) {
+        dbOwner = next;
+        syncAdminLink();
+      }
+    }, () => {});
+  } catch {
+    return undefined;
+  }
+}
+function syncAdminLink() {
+  const link = document.getElementById('adminLink');
+  if (link) link.classList.toggle('hidden', !isOwner());
 }
 function showError(e) {
   const code = e?.code || '';
@@ -218,6 +239,9 @@ function listen() {
   stopMessages?.();
   messages.replaceChildren();
   stickToBottom = true;
+  stopOwner?.();
+  stopOwner = watchOwner();
+  syncAdminLink();
   status.textContent = 'Соединяемся…';
   chatError.textContent = '';
   const q = query(ref(db, 'messages'), limitToLast(100));
@@ -245,6 +269,8 @@ function stopAll() {
   stopPin = null;
   stopConn?.();
   stopConn = null;
+  stopOwner?.();
+  stopOwner = null;
   user = null;
   messages.replaceChildren();
   $('#pinbar')?.classList.remove('visible');
