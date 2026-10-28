@@ -1,7 +1,8 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved, get } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
 import { firebaseConfig, ownerEmail } from './firebase-config.js';
+import { YANDEX_CLIENT_ID, API_BASE } from './config.js';
 
 const $ = (s) => document.querySelector(s);
 const login = $('#login');
@@ -164,6 +165,10 @@ function findMessage(id) {
   if (!id) return null;
   return messages.querySelector(`[data-id="${CSS.escape(id)}"]`);
 }
+function fileButton(f) {
+  const size = f.size ? ` (${Math.max(1, Math.round(f.size / 1024))} КБ)` : '';
+  return `<button type="button" class="file" data-key="${safe(f.key)}">📎 ${safe(f.name || 'файл')}${size}</button>`;
+}
 function addMessage(id, m) {
   if (!id || !user) return;
   if (findMessage(id)) return;
@@ -176,7 +181,7 @@ function addMessage(id, m) {
   node.dataset.uid = typeof m.uid === 'string' ? m.uid : '';
   node.dataset.timestamp = Number.isFinite(Number(m.createdAt)) ? String(Number(m.createdAt)) : '';
   const who = safe(m.name || m.email || 'Участник');
-  node.innerHTML = `${own ? '' : `<div class="sender">${who}</div>`}<div class="body">${safe(m.text || '')}</div><div class="time">${time(m.createdAt)}</div>`;
+  node.innerHTML = `${own ? '' : `<div class="sender">${who}</div>`}${m.file ? fileButton(m.file) : ''}${m.file && m.text === m.file.name ? '' : `<div class="body">${safe(m.text || '')}</div>`}<div class="time">${time(m.createdAt)}</div>`;
   messages.append(node);
   bindMessageMenu(node, id, m);
   refreshSenders();
@@ -337,6 +342,28 @@ if (!placeholder) {
       loginBtn.disabled = false;
     }
   });
+  const yandexBtn = $('#yandexBtn');
+  yandexBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginError.textContent = '';
+    if (!YANDEX_CLIENT_ID || !API_BASE) { loginError.textContent = 'Вход через Яндекс пока не настроен.'; return; }
+    const back = location.origin + location.pathname;
+    location.href = 'https://oauth.yandex.ru/authorize?response_type=token&client_id=' + encodeURIComponent(YANDEX_CLIENT_ID) + '&redirect_uri=' + encodeURIComponent(back);
+  });
+  const yaToken = new URLSearchParams(location.hash.slice(1)).get('access_token');
+  if (yaToken) {
+    history.replaceState(null, '', location.pathname + location.search);
+    loginBtn.disabled = true;
+    yandexBtn.disabled = true;
+    fetch(API_BASE + '/yandex-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ accessToken: yaToken }) })
+      .then(async (r) => {
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) throw new Error(d.error || 'Не удалось войти через Яндекс.');
+        await signInWithCustomToken(auth, d.customToken);
+      })
+      .catch((err) => { loginError.textContent = err.message || 'Не удалось войти через Яндекс.'; })
+      .finally(() => { loginBtn.disabled = false; yandexBtn.disabled = false; });
+  }
   const ACCESS_DENIED = 'Вы не в разрешенном списке пользователей, Обратитесь к администратору';
   let pendingLoginError = '';
   let checkingAccess = false;
@@ -473,6 +500,44 @@ document.addEventListener('click', async (e) => {
   }
 });
 
+let pendingFile = null;
+const fileInput = $('#file');
+const attachBtn = $('#attachBtn');
+attachBtn.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => {
+  const f = fileInput.files[0];
+  chatError.textContent = '';
+  if (!f) return;
+  if (f.size > 20 * 1024 * 1024) { chatError.textContent = 'Файл больше 20 МБ.'; fileInput.value = ''; return; }
+  pendingFile = f;
+  attachBtn.classList.add('on');
+  attachBtn.title = f.name;
+});
+async function uploadFile(f) {
+  const idToken = await user.getIdToken();
+  const r = await fetch(API_BASE + '/upload-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken, fileName: f.name, size: f.size, contentType: f.type || 'application/octet-stream' }) });
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || 'Не удалось загрузить файл.');
+  const put = await fetch(d.uploadUrl, { method: 'PUT', headers: { 'Content-Type': d.contentType }, body: f });
+  if (!put.ok) throw new Error('Файл не загрузился, попробуйте ещё раз.');
+  return { key: d.key, name: f.name, size: f.size, type: d.contentType };
+}
+messages.addEventListener('click', async (e) => {
+  const btn = e.target.closest('button[data-key]');
+  if (!btn || !user) return;
+  btn.disabled = true;
+  try {
+    const idToken = await user.getIdToken();
+    const r = await fetch(API_BASE + '/file-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken, key: btn.dataset.key }) });
+    const d = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(d.error || 'Нет доступа к файлу.');
+    window.open(d.url, '_blank', 'noopener');
+  } catch (err) {
+    chatError.textContent = err.message || 'Не удалось открыть файл.';
+  } finally {
+    btn.disabled = false;
+  }
+});
 $('#unpin').onclick = async () => {
   if (!isOwner()) return;
   try { await remove(ref(db, 'pinnedMessage')); }
@@ -482,18 +547,25 @@ $('#logout').onclick = () => auth && signOut(auth);
 $('#form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = $('#text');
-  const text = input.value.trim().slice(0, 2000);
-  if (!text || !user || !db) return;
+  const caption = input.value.trim().slice(0, 2000);
+  const file = pendingFile;
+  if ((!caption && !file) || !user || !db) return;
   input.disabled = true;
   try {
-    await push(ref(db, 'messages'), {
+    const data = {
       uid: user.uid,
       name: user.displayName || user.email || 'Участник',
       email: user.email || '',
-      text,
+      text: caption || (file ? file.name : ''),
       createdAt: serverTimestamp()
-    });
+    };
+    if (file) data.file = await uploadFile(file);
+    await push(ref(db, 'messages'), data);
     input.value = '';
+    pendingFile = null;
+    fileInput.value = '';
+    attachBtn.classList.remove('on');
+    attachBtn.title = 'Прикрепить файл';
     chatError.textContent = '';
   } catch (err) {
     fail(err);
