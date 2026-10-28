@@ -19,6 +19,7 @@ let db;
 let me = null;
 let state = { owner: DEFAULT_OWNER, emails: [], updatedAt: 0, exists: false };
 let draft = null;
+let draftProviders = {};
 let stopAccess;
 let stopLog;
 
@@ -30,6 +31,33 @@ function parseList(raw) {
 }
 function packList(emails) {
   return emails.length ? `,${emails.join(',')},` : '';
+}
+// Способ входа для каждой почты: google или yandex. Хранится отдельно от списка,
+// чтобы правила базы и вход через Яндекс работали как раньше: доступ по-прежнему
+// решает только список почт. Почты без записи считаются Google (так было раньше).
+const PROVIDERS = { google: 'Google', yandex: 'Яндекс' };
+function parseProviders(raw) {
+  const map = {};
+  if (typeof raw !== 'string') return map;
+  for (const part of raw.split(',')) {
+    const [mail, p] = part.split(':').map((s) => (s || '').trim().toLowerCase());
+    if (mail && PROVIDERS[p]) map[mail] = p;
+  }
+  return map;
+}
+function packProviders(map, emails) {
+  const parts = emails.filter((e) => map[e]).map((e) => `${e}:${map[e]}`);
+  return parts.length ? `,${parts.join(',')},` : '';
+}
+function providerOf(email) {
+  return draftProviders[email] || 'google';
+}
+function syncProviderHint() {
+  const yandex = $('#newProvider').value === 'yandex';
+  $('#newEmail').placeholder = yandex ? 'почта@yandex.ru' : 'почта@gmail.com';
+  $('#providerHint').textContent = yandex
+    ? 'Войдёт через Яндекс ID. Укажите почту, которая в Яндекс ID стоит основной (обычно @yandex.ru или @ya.ru). Если вход не проходит, проверьте основную почту в профиле Яндекс ID.'
+    : 'Войдёт через кнопку Google. Укажите почту Gmail или Google Workspace.';
 }
 function fmt(ts) {
   const n = Number(ts);
@@ -61,10 +89,12 @@ function loadState(snapshot) {
     owner: String(v.owner || DEFAULT_OWNER).toLowerCase(),
     emails: parseList(v.emails),
     updatedAt: Number(v.updatedAt) || 0,
+    providers: parseProviders(v.providers),
   };
   if (!state.emails.length) state.emails = [...DEFAULT_EMAILS];
   if (state.owner && !state.emails.includes(state.owner)) state.emails.unshift(state.owner);
   draft = [...state.emails];
+  draftProviders = { ...state.providers };
   render();
 }
 function dirty() {
@@ -87,6 +117,10 @@ function render() {
     span.className = 'mail';
     span.textContent = email;
     li.append(span);
+    const pv = document.createElement('span');
+    pv.className = 'badge';
+    pv.textContent = PROVIDERS[providerOf(email)];
+    li.append(pv);
     if (email === state.owner) {
       const b = document.createElement('span');
       b.className = 'badge owner';
@@ -101,6 +135,7 @@ function render() {
     del.title = email === state.owner ? 'Сначала назначьте другого владельца' : 'Убрать из списка';
     del.onclick = () => {
       draft = draft.filter((e) => e !== email);
+      delete draftProviders[email];
       $('#saveMsg').textContent = '';
       render();
     };
@@ -128,6 +163,7 @@ async function save() {
     await set(ref(db, 'access'), {
       owner,
       emails: packList(emails),
+      providers: packProviders(draftProviders, emails),
       updatedAt: Date.now(),
       updatedBy: me.email,
     });
@@ -323,6 +359,7 @@ function init() {
       const email = normalize($('#newEmail').value);
       if (draft.includes(email)) throw new Error('Такая почта уже в списке.');
       draft.push(email);
+      draftProviders[email] = $('#newProvider').value === 'yandex' ? 'yandex' : 'google';
       $('#newEmail').value = '';
       $('#saveMsg').textContent = '';
       render();
@@ -331,8 +368,10 @@ function init() {
     }
   };
   $('#newEmail').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('#addBtn').click(); });
+  $('#newProvider').addEventListener('change', syncProviderHint);
+  syncProviderHint();
   $('#saveBtn').onclick = save;
-  $('#revertBtn').onclick = () => { draft = [...state.emails]; $('#saveMsg').textContent = ''; $('#listError').textContent = ''; render(); };
+  $('#revertBtn').onclick = () => { draft = [...state.emails]; draftProviders = { ...state.providers }; $('#saveMsg').textContent = ''; $('#listError').textContent = ''; render(); };
   $('#ownerBtn').onclick = setOwner;
   $('#logout').onclick = () => auth && signOut(auth);
 

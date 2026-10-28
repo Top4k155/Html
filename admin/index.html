@@ -29,6 +29,7 @@ button{cursor:pointer}
 .btn:disabled{opacity:.5;cursor:default}
 .row{display:flex;gap:10px;flex-wrap:wrap}
 .field{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px}
+.field select{min-height:46px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--card);color:var(--ink)}
 .field input{flex:1;min-width:220px;min-height:46px;border:1px solid var(--line);border-radius:10px;padding:10px 14px;background:var(--card);color:var(--ink)}
 .error{color:var(--danger);font-size:14px;min-height:20px;margin:6px 0 0}
 .ok{color:var(--ok);font-size:14px;margin-top:10px}
@@ -81,9 +82,11 @@ a{color:var(--blue)}
     <h2>Доступ к чату</h2>
     <p class="hint">Кто может войти в чат. Изменения применяются сразу после сохранения, правила базы публиковать заново не нужно.</p>
     <div class="field">
+      <select id="newProvider" aria-label="Способ входа"><option value="google">Google</option><option value="yandex">Яндекс</option></select>
       <input id="newEmail" type="email" autocomplete="off" placeholder="почта@gmail.com" aria-label="Новая почта">
       <button id="addBtn" class="btn primary" type="button">Добавить</button>
     </div>
+    <p id="providerHint" class="hint" style="margin:0 0 10px"></p>
     <div id="listError" class="error" role="status" aria-live="polite"></div>
     <ul id="list" class="list"></ul>
     <div class="stats">
