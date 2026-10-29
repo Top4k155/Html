@@ -131,7 +131,7 @@ button:disabled{opacity:.5;cursor:default}
 
 .feed{
   flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;
-  padding:18px max(14px,calc((100% - 760px)/2));
+  padding:18px clamp(12px,3vw,40px);
 }
 .day{
   text-align:center;margin:0 auto 16px;width:max-content;
@@ -143,7 +143,7 @@ button:disabled{opacity:.5;cursor:default}
 
 /* ---------- Сообщения ---------- */
 .msg{
-  position:relative;width:max-content;max-width:min(76%,520px);
+  position:relative;width:max-content;max-width:min(76%,clamp(260px,42vw,900px));
   padding:8px 12px 6px;border-radius:16px;
   background:var(--other);box-shadow:var(--shadow);
   overflow-wrap:anywhere;touch-action:pan-y;
@@ -152,9 +152,9 @@ button:disabled{opacity:.5;cursor:default}
 }
 .msg.other{align-self:flex-start;border-bottom-left-radius:4px}
 .msg.mine{align-self:flex-end;background:var(--mine);border-bottom-right-radius:4px;transform-origin:bottom right}
-.sender{font-size:13px;font-weight:700;color:var(--sender);margin-bottom:2px}
-.body{white-space:pre-wrap;font-size:16px}
-.time{display:block;text-align:right;font-size:12px;color:var(--muted);margin-top:2px}
+.sender{font-size:clamp(12px,.35vw + 8px,16px);font-weight:700;color:var(--sender);margin-bottom:2px}
+.body{white-space:pre-wrap;font-size:clamp(15px,.55vw + 9px,21px)}
+.time{display:block;text-align:right;font-size:clamp(11px,.3vw + 7px,14px);color:var(--muted);margin-top:2px}
 
 /* Карточка файла */
 .file{
