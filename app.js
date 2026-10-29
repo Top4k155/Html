@@ -165,9 +165,16 @@ function findMessage(id) {
   if (!id) return null;
   return messages.querySelector(`[data-id="${CSS.escape(id)}"]`);
 }
+function fmtSize(n) {
+  const b = Number(n) || 0;
+  if (b <= 0) return '';
+  if (b < 1024 * 1024) return Math.max(1, Math.round(b / 1024)) + ' КБ';
+  return (b / (1024 * 1024)).toFixed(1).replace('.', ',') + ' МБ';
+}
 function fileButton(f) {
-  const size = f.size ? ` (${Math.max(1, Math.round(f.size / 1024))} КБ)` : '';
-  return `<button type="button" class="file" data-key="${safe(f.key)}">📎 ${safe(f.name || 'файл')}${size}</button>`;
+  const name = safe(f.name || 'файл');
+  const size = fmtSize(f.size);
+  return `<button type="button" class="file" data-key="${safe(f.key)}" aria-label="Скачать файл ${name}"><span class="fi" aria-hidden="true">📄</span><span class="fmeta"><strong>${name}</strong><small>${size ? size + ' · ' : ''}Скачать</small></span></button>`;
 }
 function addMessage(id, m) {
   if (!id || !user) return;
@@ -449,7 +456,7 @@ function applyTheme(mode) {
   const theme = mode === 'dark' ? 'dark' : 'light';
   document.documentElement.dataset.theme = theme;
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.content = theme === 'dark' ? '#0e1621' : '#f6f7f9';
+  if (meta) meta.content = theme === 'dark' ? '#121614' : '#f3f1ec';
 }
 applyTheme(themeMode());
 $('#themeMode').value = themeMode();
@@ -501,8 +508,35 @@ document.addEventListener('click', async (e) => {
 });
 
 let pendingFile = null;
+let sending = false;
 const fileInput = $('#file');
 const attachBtn = $('#attachBtn');
+const chip = $('#filechip');
+const sendBtn = $('#send');
+const textInput = $('#text');
+// Плашка выбранного файла: видно, что файл прикреплён, и его можно убрать до отправки.
+function showChip(f) {
+  $('#fcName').textContent = f.name;
+  $('#fcSize').textContent = fmtSize(f.size) || 'Размер неизвестен';
+  chip.classList.remove('sending', 'hidden');
+}
+function clearFile() {
+  pendingFile = null;
+  fileInput.value = '';
+  attachBtn.classList.remove('on');
+  attachBtn.title = 'Прикрепить файл';
+  chip.classList.add('hidden');
+  chip.classList.remove('sending');
+  syncSend();
+}
+// Кнопка «Отправить» активна только если есть текст или файл и ничего не отправляется.
+function syncSend() {
+  const ready = Boolean(textInput.value.trim()) || Boolean(pendingFile);
+  sendBtn.disabled = !ready || sending;
+}
+$('#fcRemove').onclick = clearFile;
+textInput.addEventListener('input', syncSend);
+syncSend();
 attachBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', () => {
   const f = fileInput.files[0];
@@ -512,6 +546,8 @@ fileInput.addEventListener('change', () => {
   pendingFile = f;
   attachBtn.classList.add('on');
   attachBtn.title = f.name;
+  showChip(f);
+  syncSend();
 });
 async function uploadFile(f) {
   const idToken = await user.getIdToken();
@@ -551,6 +587,14 @@ $('#form').addEventListener('submit', async (e) => {
   const file = pendingFile;
   if ((!caption && !file) || !user || !db) return;
   input.disabled = true;
+  sending = true;
+  sendBtn.disabled = true;
+  sendBtn.classList.add('busy');
+  attachBtn.disabled = true;
+  if (file) {
+    chip.classList.add('sending');
+    $('#fcSize').textContent = 'Отправляется…';
+  }
   try {
     const data = {
       uid: user.uid,
@@ -562,15 +606,18 @@ $('#form').addEventListener('submit', async (e) => {
     if (file) data.file = await uploadFile(file);
     await push(ref(db, 'messages'), data);
     input.value = '';
-    pendingFile = null;
-    fileInput.value = '';
-    attachBtn.classList.remove('on');
-    attachBtn.title = 'Прикрепить файл';
+    clearFile();
     chatError.textContent = '';
   } catch (err) {
     fail(err);
   } finally {
     input.disabled = false;
+    sending = false;
+    sendBtn.classList.remove('busy');
+    attachBtn.disabled = false;
+    chip.classList.remove('sending');
+    if (pendingFile) $('#fcSize').textContent = fmtSize(pendingFile.size) || 'Размер неизвестен';
+    syncSend();
     input.focus();
   }
 });

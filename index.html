@@ -1,88 +1,372 @@
 <!doctype html>
 <html lang="ru">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content"><meta name="theme-color" content="#f6f7f9"><meta name="color-scheme" content="light"><script>(function(){var t="light";try{t=localStorage.getItem("chat-theme")||"light"}catch(e){}if(t!=="dark")t="light";document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#0e1621":"#f6f7f9";var c=document.querySelector('meta[name="color-scheme"]');if(c)c.content=t})();</script><title>Мой чат</title><meta name="description" content="Личный чат. Вход через Google, сообщения видят только адреса из правил базы.">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
+<meta name="theme-color" content="#f3f1ec">
+<meta name="color-scheme" content="light">
+<script>(function(){var t="light";try{t=localStorage.getItem("chat-theme")||"light"}catch(e){}if(t!=="dark")t="light";document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=t==="dark"?"#121614":"#f3f1ec";var c=document.querySelector('meta[name="color-scheme"]');if(c)c.content=t})();</script>
+<title>Мой чат</title>
+<meta name="description" content="Личный чат. Вход через Google или Яндекс, сообщения видят только допущенные участники.">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://all823218-default-rtdb.firebaseio.com" crossorigin>
 <style>
-:root{--bg:#f6f7f9;--white:#fff;--ink:#17212b;--muted:#6b7a88;--line:#e8edf1;--blue:#1674c7;--green:#e7ffdb}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",sans-serif}button,input{font:inherit}button{cursor:pointer}.login{max-width:430px;margin:12vh auto;padding:30px;background:white;border:1px solid var(--line);border-radius:18px}.brand{font-size:20px;font-weight:750;display:flex;align-items:center;gap:10px}.logo{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--blue);color:#fff;font-weight:800}.login h1{font-size:26px;margin:25px 0 6px}.muted{color:var(--muted)}.btn{min-height:44px;border:0;border-radius:10px;padding:10px 16px;background:#edf3f8;color:var(--ink);font-weight:650}.primary{background:var(--blue);color:white}.login .btn{width:100%;margin-top:20px}.error{color:#c43d4b;font-size:14px;margin-top:12px}.app{height:100dvh;max-width:1050px;margin:auto;display:flex;flex-direction:column;background:white;border-left:1px solid var(--line);border-right:1px solid var(--line)}.header{height:68px;flex:none;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 20px}.avatar{height:42px;width:42px;border-radius:50%;display:grid;place-items:center;background:#e4f2ff;color:#1674c7;font-weight:750;font-size:18px}.headcopy{flex:1;min-width:0}.headcopy strong{display:block}.headcopy small{color:var(--muted)}.head-actions{display:flex;align-items:center;gap:12px}.head-actions img{width:34px;height:34px;border-radius:50%}.feed{flex:1;overflow:auto;padding:22px max(18px,calc((100% - 720px)/2));background-color:#e9eff2;background-image:radial-gradient(#d3dfe4 0.7px,transparent 0.7px);background-size:14px 14px}.day{text-align:center;margin:4px auto 18px;width:max-content;border-radius:20px;background:#ffffffcc;color:#546672;padding:5px 12px;font-size:12px}.msg{max-width:min(78%,560px);width:max-content;margin:8px 0;padding:9px 12px 6px;border-radius:13px;background:white;box-shadow:0 1px 2px #15203018;overflow-wrap:anywhere}.msg.mine{margin-left:auto;background:var(--green);border-bottom-right-radius:4px}.msg.other{border-bottom-left-radius:4px}.sender{font-size:13px;font-weight:700;color:#1d6ba3;margin-bottom:3px}.body{white-space:pre-wrap}.time{text-align:right;color:#68757f;font-size:11px;margin:3px 0 0 14px}.empty{text-align:center;color:#546672;padding:28px 16px;background:#ffffffcf;border-radius:12px;margin:30px auto;max-width:350px}.compose{flex:none;border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:10px;align-items:flex-end;background:#fff}.compose input{flex:1;min-width:0;border:0;outline:0;background:#f3f5f7;color:#17212b;caret-color:#1674c7;border-radius:20px;padding:12px 16px;min-height:46px}.compose input::placeholder{color:#6b7a88;opacity:1}.send{width:46px;height:46px;border-radius:50%;padding:0;font-size:20px}.foot{font-size:12px;color:var(--muted);padding:0 18px 7px}.hidden{display:none!important}
-@media(max-width:600px){.login{margin:8vh 14px;padding:23px}.header{height:62px;padding:0 13px}.head-actions .btn{padding:8px 11px}.feed{padding:16px 12px}.msg{max-width:88%}.compose{padding:10px}.foot{padding:0 12px 6px}}
-</style>
-<style>
-/* Адаптивность встроена, чтобы Pages не зависел от отдельного CSS-файла. */
-html,body{width:100%;height:100%;min-height:100%;margin:0;overflow:hidden}
-.app{width:100%;max-width:none;height:100vh;height:100dvh;margin:0;border:0;border-radius:0;box-shadow:none}
-.feed{padding:22px clamp(14px,2vw,28px)}
-.header{padding-left:clamp(12px,3vw,28px);padding-right:clamp(12px,3vw,28px)}
-.compose{padding-left:clamp(10px,2vw,22px);padding-right:clamp(10px,2vw,22px)}
-@media(max-width:600px){
- .app{height:100vh;height:100dvh;min-height:0}
- .header{height:60px;min-height:60px;padding:0 12px;gap:10px}
- .avatar{width:38px;height:38px;flex:none}
- .headcopy strong{font-size:16px}.headcopy small{font-size:13px}
- .head-actions{gap:8px}.head-actions .btn{min-height:42px;padding:8px 12px}
- .feed{padding:14px 10px;overscroll-behavior:contain}
- .msg{max-width:88%;font-size:16px;padding:9px 11px 6px}
- .compose{padding:9px 10px calc(9px + env(safe-area-inset-bottom));gap:8px}
- .compose input{font-size:16px;min-height:46px;padding:11px 15px}
- .send{width:46px;height:46px;flex:none}
- .foot{font-size:12px;padding:5px 12px}
+/* ---------- Тема ---------- */
+:root{
+  --bg:#f3f1ec;
+  --chat-bg:#ebe8e1;
+  --surface:#ffffff;
+  --ink:#1f2421;
+  --muted:#6f6b63;
+  --line:#e2ded5;
+  --accent:#2f6b5c;
+  --accent-ink:#ffffff;
+  --sender:#2f6b5c;
+  --mine:#dcefe6;
+  --other:#ffffff;
+  --danger:#b4424f;
+  --warn-bg:#fbf3dc;
+  --warn-line:#eadcae;
+  --warn-ink:#7a5a00;
+  --shadow:0 1px 2px rgba(31,36,33,.08);
+  --radius:14px;
 }
-</style>
-<style>
-.settings-panel{position:fixed;inset:0;z-index:20;background:#17212b66;display:grid;place-items:center;padding:16px}.settings-card{width:min(520px,100%);background:#fff;border-radius:16px;padding:22px;box-shadow:0 18px 60px #0003}.settings-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:18px}.settings-top h2{font-size:22px;margin:0}.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-top:1px solid var(--line)}.setting-row strong,.setting-row small{display:block}.setting-row small{font-size:13px;color:var(--muted);margin-top:3px}.setting-select{min-height:44px;max-width:190px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:white;color:var(--ink);font:inherit}@media(max-width:600px){.settings-card{padding:18px}.setting-row{align-items:flex-start;flex-direction:column}.setting-select{max-width:none;width:100%}}
-.pinbar{display:none;flex:none;background:#fff7da;border-bottom:1px solid #eadcae;padding:10px clamp(12px,2vw,24px);align-items:flex-start;gap:10px}.pinbar.visible{display:flex}.pinmark{color:#b57b00;font-size:18px;line-height:1.3}.pincontent{min-width:0;flex:1}.pinlabel{font-size:12px;font-weight:700;color:#896300}.pintext{white-space:pre-wrap;overflow-wrap:anywhere}.pinclose{border:0;background:transparent;color:#756b50;font-size:20px;min-width:40px;min-height:40px;border-radius:8px}.msg{touch-action:pan-y;user-select:text;-webkit-user-select:text}.msg-menu{position:fixed;z-index:30;min-width:180px;padding:6px;background:white;border:1px solid var(--line);border-radius:12px;box-shadow:0 8px 28px #17212b33}.msg-menu button{display:block;width:100%;min-height:44px;text-align:left;border:0;border-radius:8px;background:white;padding:9px 12px;color:var(--ink);font:inherit}.msg-menu button:hover{background:#f1f5f8}
+html[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#121614;
+  --chat-bg:#161b19;
+  --surface:#1b201e;
+  --ink:#eef2ef;
+  --muted:#9aa59f;
+  --line:#2c3430;
+  --accent:#4f9c85;
+  --accent-ink:#0d1210;
+  --sender:#7fc7b2;
+  --mine:#24453b;
+  --other:#222927;
+  --danger:#ff8a94;
+  --warn-bg:#2d2716;
+  --warn-line:#5a4b28;
+  --warn-ink:#e6b450;
+  --shadow:none;
+}
+@media (prefers-contrast:more){
+  :root{--muted:#4f4b44;--line:#bdb7aa}
+  html[data-theme="dark"]{--muted:#c4cdc8;--line:#56615b}
+}
 
-.msg{animation:msg-in .24s cubic-bezier(.2,.8,.2,1) both;transform-origin:bottom left}.msg.mine{transform-origin:bottom right}@keyframes msg-in{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
-.msg-menu:not(.hidden){animation:menu-in .16s ease-out both;transform-origin:top left}@keyframes menu-in{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-.settings-panel:not(.hidden){animation:overlay-in .18s ease-out both}.settings-card{animation:settings-in .22s cubic-bezier(.2,.8,.2,1) both}.settings-closing{animation:overlay-out .18s ease-in both}.settings-closing .settings-card{animation:settings-out .16s ease-in both}
-@keyframes overlay-in{from{opacity:0}to{opacity:1}}@keyframes overlay-out{to{opacity:0}}@keyframes settings-in{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}@keyframes settings-out{to{opacity:0;transform:translateY(8px) scale(.98)}}
-.msg-removing{animation:msg-break .48s ease-in forwards!important;pointer-events:none}@keyframes msg-break{to{opacity:0;filter:blur(2px);transform:scale(.86) rotate(-3deg)}}.msg-piece{position:fixed;z-index:100;width:7px;height:7px;border-radius:2px;background:#3390ec;pointer-events:none;animation:piece-fly .68s cubic-bezier(.2,.7,.4,1) forwards}@keyframes piece-fly{0%{opacity:1;transform:translate(0,0) rotate(0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(.25)}}
-@media(prefers-reduced-motion:reduce){.msg,.msg-menu:not(.hidden),.settings-panel:not(.hidden),.settings-card,.msg-removing,.msg-piece{animation-duration:.01ms!important;animation-iteration-count:1!important}}
-</style><style>
-.app{min-height:0;overflow:hidden}
-.feed,.header,.pinbar,.compose,.foot,#chatError{flex:none}
-.feed{flex:1;min-height:0}
-.header{height:auto;min-height:60px;flex-wrap:wrap;row-gap:8px;padding-top:8px;padding-bottom:8px}
-#chatError{margin:0;padding:6px 14px 0}
-#chatError:empty{display:none}
-@media(max-width:520px){
- .head-actions{gap:6px}
- .head-actions .btn{padding:8px 10px;font-size:14px}
- .head-actions img{width:28px;height:28px}
+/* ---------- База ---------- */
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{opacity:.5;cursor:default}
+.hidden{display:none!important}
+.muted{color:var(--muted)}
+.sr-only{position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:8px}
+#text:focus-visible{outline:none}
+.error{color:var(--danger);font-size:14px}
+.btn{
+  min-height:44px;padding:0 16px;border:1px solid var(--line);border-radius:12px;
+  background:var(--surface);color:var(--ink);font-weight:600;
+  display:inline-flex;align-items:center;justify-content:center;gap:6px;
+  text-decoration:none;white-space:nowrap;transition:background .15s,border-color .15s;
+}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.btn.primary:hover{filter:brightness(1.06)}
+
+/* ---------- Вход ---------- */
+.login{
+  max-width:400px;margin:10vh auto 0;padding:32px 28px;
+  background:var(--surface);border:1px solid var(--line);border-radius:20px;
+  box-shadow:0 12px 40px rgba(31,36,33,.10);
+}
+.brand{display:flex;align-items:center;gap:12px;font-weight:700;font-size:18px}
+.logo{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);font-weight:800}
+.login h1{font-size:26px;line-height:1.2;margin:26px 0 8px;letter-spacing:-.01em}
+.login p{margin:0}
+.login .btn{width:100%;margin-top:12px}
+.login .note{font-size:13px;color:var(--muted);margin-top:20px}
+.login .error{margin-top:12px}
+.login #loginError:empty{display:none}
+
+/* ---------- Приложение ---------- */
+.app{
+  height:100vh;height:100dvh;display:flex;flex-direction:column;
+  background:var(--chat-bg);overflow:hidden;
+}
+.header{
+  flex:none;display:flex;align-items:center;gap:12px;
+  padding:10px clamp(12px,3vw,24px);
+  background:var(--surface);border-bottom:1px solid var(--line);
+}
+.avatar{
+  width:42px;height:42px;border-radius:50%;flex:none;
+  display:grid;place-items:center;background:var(--accent);color:var(--accent-ink);
+  font-weight:700;font-size:18px;
+}
+.headcopy{flex:1;min-width:0}
+.headcopy strong{display:block;font-size:17px;line-height:1.2}
+.headcopy small{display:block;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.head-actions{display:flex;align-items:center;gap:8px;flex:none}
+.head-actions .btn{min-height:40px;padding:0 12px;font-size:14px}
+#photo{width:34px;height:34px;border-radius:50%;object-fit:cover}
+#adminLink{font-size:14px}
+
+.pinbar{
+  display:none;flex:none;gap:10px;align-items:flex-start;
+  padding:10px clamp(12px,3vw,24px);
+  background:var(--warn-bg);border-bottom:1px solid var(--warn-line);
+}
+.pinbar.visible{display:flex}
+.pinmark{color:var(--warn-ink);font-size:18px;line-height:1.3}
+.pincontent{flex:1;min-width:0}
+.pinlabel{font-size:12px;font-weight:700;color:var(--warn-ink)}
+.pintext{white-space:pre-wrap;overflow-wrap:anywhere;font-size:15px}
+.pinclose{border:0;background:transparent;color:var(--muted);font-size:22px;min-width:40px;min-height:40px;border-radius:10px}
+
+.feed{
+  flex:1;min-height:0;overflow:auto;overscroll-behavior:contain;
+  padding:18px max(14px,calc((100% - 760px)/2));
+}
+.day{
+  text-align:center;margin:0 auto 16px;width:max-content;
+  padding:4px 12px;border-radius:999px;
+  background:var(--surface);color:var(--muted);font-size:12px;box-shadow:var(--shadow);
+}
+#messages{display:flex;flex-direction:column;gap:6px}
+.empty{text-align:center;color:var(--muted);padding:24px 0}
+
+/* ---------- Сообщения ---------- */
+.msg{
+  position:relative;width:max-content;max-width:min(76%,520px);
+  padding:8px 12px 6px;border-radius:16px;
+  background:var(--other);box-shadow:var(--shadow);
+  overflow-wrap:anywhere;touch-action:pan-y;
+  user-select:text;-webkit-user-select:text;
+  animation:msg-in .24s cubic-bezier(.2,.8,.2,1) both;
+}
+.msg.other{align-self:flex-start;border-bottom-left-radius:4px}
+.msg.mine{align-self:flex-end;background:var(--mine);border-bottom-right-radius:4px;transform-origin:bottom right}
+.sender{font-size:13px;font-weight:700;color:var(--sender);margin-bottom:2px}
+.body{white-space:pre-wrap;font-size:16px}
+.time{display:block;text-align:right;font-size:12px;color:var(--muted);margin-top:2px}
+
+/* Карточка файла */
+.file{
+  display:flex;align-items:center;gap:12px;
+  width:100%;min-width:230px;margin:2px 0 4px;padding:10px 12px;
+  border:1px solid var(--line);border-radius:12px;
+  background:var(--surface);text-align:left;
+}
+.file:hover{border-color:var(--accent)}
+.file:disabled{opacity:.6}
+.fi{
+  width:40px;height:40px;flex:none;border-radius:10px;
+  display:grid;place-items:center;font-size:20px;
+  background:var(--accent);color:var(--accent-ink);
+}
+.fmeta{min-width:0;flex:1}
+.fmeta strong{display:block;font-size:15px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fmeta small{display:block;font-size:12px;color:var(--muted)}
+
+.msg-menu{
+  position:fixed;z-index:30;min-width:200px;padding:6px;
+  background:var(--surface);border:1px solid var(--line);border-radius:14px;
+  box-shadow:0 10px 30px rgba(0,0,0,.18);
+  animation:menu-in .16s ease-out both;transform-origin:top left;
+}
+.msg-menu button{
+  display:block;width:100%;min-height:44px;text-align:left;
+  border:0;border-radius:10px;background:transparent;padding:0 12px;color:var(--ink);
+}
+.msg-menu button:hover{background:var(--chat-bg)}
+
+.foot{flex:none;text-align:center;font-size:12px;color:var(--muted);padding:4px 12px 6px}
+#chatError{flex:none;padding:0 16px}
+#chatError:not(:empty){padding:8px 16px 0;color:var(--danger);font-size:14px}
+
+/* ---------- Поле ввода ---------- */
+.compose{
+  flex:none;display:flex;flex-wrap:wrap;align-items:center;gap:8px;
+  padding:10px 12px calc(10px + env(safe-area-inset-bottom));
+  background:var(--surface);border-top:1px solid var(--line);
+}
+.filechip{
+  flex:1 0 100%;display:flex;align-items:center;gap:10px;
+  padding:8px 8px 8px 10px;border-radius:12px;
+  background:var(--bg);border:1px solid var(--line);
+}
+.filechip .fi{width:36px;height:36px;font-size:17px}
+.filechip.sending{opacity:.75}
+.fc-x{
+  width:40px;height:40px;flex:none;border:0;border-radius:10px;
+  background:transparent;color:var(--muted);font-size:24px;line-height:1;
+}
+.fc-x:hover{background:var(--line);color:var(--ink)}
+.attach{width:44px;height:44px;padding:0;flex:none;font-size:20px}
+.attach.on{border-color:var(--accent);color:var(--accent);background:var(--bg)}
+#text{
+  flex:1;min-width:0;min-height:44px;padding:0 16px;
+  border:1px solid var(--line);border-radius:22px;
+  background:var(--bg);font-size:16px;
+}
+#text::placeholder{color:var(--muted)}
+#text:focus{outline:none;border-color:var(--accent)}
+.send{width:44px;height:44px;padding:0;flex:none;border-radius:50%;font-size:18px}
+.send.busy{opacity:.6}
+
+/* ---------- Настройки ---------- */
+.settings-panel{
+  position:fixed;inset:0;z-index:20;padding:16px;
+  display:grid;place-items:center;background:rgba(20,24,22,.45);
+  animation:overlay-in .18s ease-out both;
+}
+.settings-closing{animation:overlay-out .18s ease-in both}
+.settings-card{
+  width:min(460px,100%);padding:22px;border-radius:20px;
+  background:var(--surface);box-shadow:0 18px 60px rgba(0,0,0,.25);
+  animation:settings-in .22s cubic-bezier(.2,.8,.2,1) both;
+}
+.settings-closing .settings-card{animation:settings-out .16s ease-in both}
+.settings-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:6px}
+.settings-top h2{font-size:21px;margin:0}
+.setting-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 0;border-top:1px solid var(--line)}
+.setting-row strong,.setting-row small{display:block}
+.setting-row small{font-size:13px;color:var(--muted);margin-top:2px}
+.setting-select{
+  min-height:44px;max-width:200px;padding:8px 10px;
+  border:1px solid var(--line);border-radius:10px;background:var(--bg);
+}
+
+/* ---------- Адаптив ---------- */
+@media (max-width:600px){
+  .login{margin:8vh 14px 0;padding:24px 22px}
+  .header{gap:10px;padding:8px 12px}
+  .avatar{width:38px;height:38px;font-size:16px}
+  .headcopy strong{font-size:16px}
+  .feed{padding:14px 10px}
+  .msg{max-width:86%}
+  .file{min-width:0;width:100%}
+  .compose{padding:9px 10px calc(9px + env(safe-area-inset-bottom));gap:6px}
+  #text{font-size:16px;min-height:46px}
+  .send{width:46px;height:46px}
+  .setting-row{flex-direction:column;align-items:flex-start}
+  .setting-select{max-width:none;width:100%}
+  .settings-card{padding:18px}
+}
+@media (max-width:520px){
+  .head-actions{gap:6px}
+  .head-actions .btn{padding:0;width:40px;min-width:40px}
+  .head-actions .lbl{display:none}
+  #adminLink{width:auto;padding:0 10px;font-size:13px}
+}
+
+/* ---------- Тёмная тема: подложка для карточек ---------- */
+html[data-theme="dark"] .login{box-shadow:none}
+
+/* ---------- Анимации ---------- */
+@keyframes msg-in{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes menu-in{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes overlay-in{from{opacity:0}to{opacity:1}}
+@keyframes overlay-out{to{opacity:0}}
+@keyframes settings-in{from{opacity:0;transform:translateY(12px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes settings-out{to{opacity:0;transform:translateY(8px) scale(.98)}}
+.msg-removing{animation:msg-break .48s ease-in forwards!important;pointer-events:none}
+@keyframes msg-break{to{opacity:0;filter:blur(2px);transform:scale(.86) rotate(-3deg)}}
+.msg-piece{position:fixed;z-index:100;width:7px;height:7px;border-radius:2px;background:var(--accent);pointer-events:none;animation:piece-fly .68s cubic-bezier(.2,.7,.4,1) forwards}
+@keyframes piece-fly{0%{opacity:1;transform:translate(0,0) rotate(0) scale(1)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) rotate(var(--rot)) scale(.25)}}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
 }
 </style>
-<style>
-html[data-theme="dark"]{color-scheme:dark;--bg:#0e1621;--ink:#f2f5f8;--muted:#8b9bab;--line:#2b3948;--blue:#2775b3;--green:#2b5278}
-html[data-theme="dark"] body{background:#0e1621;color:#f2f5f8}
-html[data-theme="dark"] .login,html[data-theme="dark"] .app,html[data-theme="dark"] .compose,html[data-theme="dark"] .settings-card,html[data-theme="dark"] .msg,html[data-theme="dark"] .msg-menu,html[data-theme="dark"] .msg-menu button{background:#17212b;color:#f2f5f8}
-html[data-theme="dark"] .btn{background:#243447;color:#f2f5f8}
-html[data-theme="dark"] .primary,html[data-theme="dark"] .send{background:#2775b3;color:#fff}
-html[data-theme="dark"] .avatar{background:#1c3d5a;color:#8ecbff}
-html[data-theme="dark"] .feed{background-color:#0e1621;background-image:radial-gradient(#243447 .7px,transparent .7px)}
-html[data-theme="dark"] .day{background:#243447cc;color:#d5dee6}
-html[data-theme="dark"] .msg{box-shadow:none}
-html[data-theme="dark"] .msg.mine{background:#2b5278;color:#f2f5f8}
-html[data-theme="dark"] .sender{color:#7ebfff}
-html[data-theme="dark"] .time,html[data-theme="dark"] .foot,html[data-theme="dark"] .muted,html[data-theme="dark"] .headcopy small{color:#b6c4d2}
-html[data-theme="dark"] .compose input,html[data-theme="dark"] .setting-select{background:#0e1621;color:#f2f5f8;border-color:#2b3948}
-html[data-theme="dark"] .pinbar{background:#2c2618;border-bottom-color:#5a4b28}
-html[data-theme="dark"] .pinmark,html[data-theme="dark"] .pinlabel{color:#e6b450}
-html[data-theme="dark"] .pinclose{color:#d7c9a4}
-html[data-theme="dark"] .msg-menu button:hover{background:#243447}
-html[data-theme="dark"] .error{color:#ff8b98}
-html[data-theme="dark"] .empty{background:#17212bcc;color:#d5dee6}
-/* Клавиатурный фокус: без этого человек с клавиатуры не видит, где он находится. */
-:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:8px}
-.compose input:focus-visible{outline-offset:-3px}
-.msg:focus-visible{outline:2px solid var(--blue)}
-@media(prefers-contrast:more){:root{--muted:#546672;--line:#c8d2da}}
-.sr-only{position:absolute;width:1px;height:1px;margin:0;overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0}
-</style>
-<style>.attach{min-width:44px;padding:0 10px}.attach.on{outline:2px solid currentColor}.file{display:inline-block;margin:0 0 6px;padding:6px 10px;border:1px solid currentColor;border-radius:10px;background:transparent;color:inherit;font:inherit;font-size:14px;cursor:pointer}.file:disabled{opacity:.5}</style></head><body>
-<div id="login" class="login"><div class="brand"><span class="logo" aria-hidden="true">Ч</span> Мой чат</div><h1>Войти в чат</h1><p class="muted">Войдите через Google или Яндекс, чтобы читать и отправлять сообщения.</p><button id="loginBtn" class="btn primary">Продолжить с Google</button><button id="yandexBtn" class="btn primary">Войти через Яндекс</button><div id="loginError" class="error"></div><p class="muted" style="font-size:13px;margin:18px 0 0">Доступ есть только у адресов, добавленных в правила базы.</p></div>
-<div id="app" class="app hidden"><header class="header"><div class="avatar" aria-hidden="true">Ч</div><div class="headcopy"><strong>Общий чат</strong><small id="status" role="status" aria-live="polite">Подключение…</small></div><div class="head-actions"><img id="photo" class="hidden" alt=""><a id="adminLink" class="btn hidden" href="admin/" style="text-decoration:none;display:inline-flex;align-items:center;min-height:44px">Админ-панель</a><button id="settingsBtn" class="btn" type="button" aria-haspopup="dialog">Настройки</button><button id="logout" class="btn" type="button">Выйти</button></div></header><div id="pinbar" class="pinbar"><span class="pinmark">⌖</span><div class="pincontent"><div class="pinlabel">Закреплённое сообщение</div><div id="pintext" class="pintext"></div></div><button id="unpin" class="pinclose hidden" type="button" aria-label="Открепить">×</button></div><main id="feed" class="feed"><div class="day">Сообщения чата</div><div id="messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Сообщения чата"></div><div id="empty" class="empty hidden">Пока нет сообщений. Напишите первым.</div></main><div class="foot">Сообщения видны всем участникам этого чата</div><div id="chatError" class="error" role="status" aria-live="polite"></div><form id="form" class="compose"><input id="file" type="file" hidden><button class="btn attach" type="button" id="attachBtn" aria-label="Прикрепить файл" title="Прикрепить файл">📎</button><label class="sr-only" for="text">Текст сообщения</label><input id="text" maxlength="2000" autocomplete="off" placeholder="Сообщение…" aria-describedby="chatError" enterkeyhint="send"><button class="btn primary send" type="submit" aria-label="Отправить">➤</button></form></div>
-<div id="settingsPanel" class="settings-panel hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle"><div class="settings-card"><div class="settings-top"><h2 id="settingsTitle">Настройки</h2><button id="settingsClose" class="btn" type="button" aria-label="Закрыть настройки">Закрыть</button></div><label class="setting-row" for="clockMode"><span><strong>Формат времени</strong><small>Как показывать время отправки сообщений</small></span><select id="clockMode" class="setting-select"><option value="auto">Авто</option><option value="12">12 часов (AM/PM)</option><option value="24">24 часа</option></select></label><label class="setting-row" for="themeMode"><span><strong>Тема</strong><small>Светлая или тёмная</small></span><select id="themeMode" class="setting-select"><option value="light">Светлая</option><option value="dark">Тёмная</option></select></label></div></div>
+</head>
+<body>
+<div id="login" class="login">
+  <div class="brand"><span class="logo" aria-hidden="true">Ч</span>Мой чат</div>
+  <h1>Войти в чат</h1>
+  <p class="muted">Войдите через Google или Яндекс, чтобы читать и отправлять сообщения.</p>
+  <button id="loginBtn" class="btn primary" type="button">Продолжить с Google</button>
+  <button id="yandexBtn" class="btn" type="button">Войти через Яндекс</button>
+  <div id="loginError" class="error" role="alert"></div>
+  <p class="note">Доступ есть только у адресов, добавленных в правила базы.</p>
+</div>
+
+<div id="app" class="app hidden">
+  <header class="header">
+    <div class="avatar" aria-hidden="true">Ч</div>
+    <div class="headcopy">
+      <strong>Общий чат</strong>
+      <small id="status" role="status" aria-live="polite">Подключение…</small>
+    </div>
+    <div class="head-actions">
+      <img id="photo" class="hidden" alt="">
+      <a id="adminLink" class="btn hidden" href="admin/">Админ-панель</a>
+      <button id="settingsBtn" class="btn" type="button" aria-haspopup="dialog" aria-label="Настройки"><span aria-hidden="true">⚙</span><span class="lbl">Настройки</span></button>
+      <button id="logout" class="btn" type="button" aria-label="Выйти"><span aria-hidden="true">⎋</span><span class="lbl">Выйти</span></button>
+    </div>
+  </header>
+
+  <div id="pinbar" class="pinbar">
+    <span class="pinmark" aria-hidden="true">⌖</span>
+    <div class="pincontent">
+      <div class="pinlabel">Закреплённое сообщение</div>
+      <div id="pintext" class="pintext"></div>
+    </div>
+    <button id="unpin" class="pinclose hidden" type="button" aria-label="Открепить">×</button>
+  </div>
+
+  <main id="feed" class="feed">
+    <div class="day">Сообщения чата</div>
+    <div id="messages" role="log" aria-live="polite" aria-relevant="additions" aria-label="Сообщения чата"></div>
+    <div id="empty" class="empty hidden">Пока нет сообщений. Напишите первым.</div>
+  </main>
+
+  <div class="foot">Сообщения видны всем участникам этого чата</div>
+  <div id="chatError" role="status" aria-live="polite"></div>
+
+  <form id="form" class="compose">
+    <div id="filechip" class="filechip hidden">
+      <span class="fi" aria-hidden="true">📄</span>
+      <div class="fmeta"><strong id="fcName"></strong><small id="fcSize"></small></div>
+      <button id="fcRemove" class="fc-x" type="button" aria-label="Убрать файл">×</button>
+    </div>
+    <input id="file" type="file" hidden>
+    <button class="btn attach" type="button" id="attachBtn" aria-label="Прикрепить файл" title="Прикрепить файл">📎</button>
+    <label class="sr-only" for="text">Текст сообщения</label>
+    <input id="text" maxlength="2000" autocomplete="off" placeholder="Сообщение…" aria-describedby="chatError" enterkeyhint="send">
+    <button id="send" class="btn primary send" type="submit" aria-label="Отправить" disabled>➤</button>
+  </form>
+</div>
+
+<div id="settingsPanel" class="settings-panel hidden" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+  <div class="settings-card">
+    <div class="settings-top">
+      <h2 id="settingsTitle">Настройки</h2>
+      <button id="settingsClose" class="btn" type="button" aria-label="Закрыть настройки">Закрыть</button>
+    </div>
+    <label class="setting-row" for="clockMode">
+      <span><strong>Формат времени</strong><small>Как показывать время отправки сообщений</small></span>
+      <select id="clockMode" class="setting-select">
+        <option value="auto">Авто</option>
+        <option value="12">12 часов (AM/PM)</option>
+        <option value="24">24 часа</option>
+      </select>
+    </label>
+    <label class="setting-row" for="themeMode">
+      <span><strong>Тема</strong><small>Светлая или тёмная</small></span>
+      <select id="themeMode" class="setting-select">
+        <option value="light">Светлая</option>
+        <option value="dark">Тёмная</option>
+      </select>
+    </label>
+  </div>
+</div>
 <div id="messageMenu" class="msg-menu hidden"></div>
-<script type="module" src="app.js"></script></body></html>
+<script type="module" src="app.js"></script>
+</body>
+</html>
