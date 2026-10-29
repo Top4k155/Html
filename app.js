@@ -174,7 +174,7 @@ function fmtSize(n) {
 function fileButton(f) {
   const name = safe(f.name || 'файл');
   const size = fmtSize(f.size);
-  return `<button type="button" class="file" data-key="${safe(f.key)}" aria-label="Скачать файл ${name}"><span class="fi" aria-hidden="true">📄</span><span class="fmeta"><strong>${name}</strong><small>${size ? size + ' · ' : ''}Скачать</small></span></button>`;
+  return `<button type="button" class="file" data-key="${safe(f.key)}" data-name="${name}" aria-label="Скачать файл ${name}"><span class="fi" aria-hidden="true">📄</span><span class="fmeta"><strong>${name}</strong><small>${size ? size + ' · ' : ''}Скачать</small></span></button>`;
 }
 function addMessage(id, m) {
   if (!id || !user) return;
@@ -564,10 +564,16 @@ messages.addEventListener('click', async (e) => {
   btn.disabled = true;
   try {
     const idToken = await user.getIdToken();
-    const r = await fetch(API_BASE + '/file-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken, key: btn.dataset.key }) });
+    const r = await fetch(API_BASE + '/file-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken, key: btn.dataset.key, name: btn.dataset.name }) });
     const d = await r.json().catch(() => ({}));
     if (!r.ok) throw new Error(d.error || 'Нет доступа к файлу.');
-    window.open(d.url, '_blank', 'noopener');
+    // Ссылка отдаётся с заголовком attachment: браузер сохраняет файл, вкладка не открывается.
+    const a = document.createElement('a');
+    a.href = d.url;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
   } catch (err) {
     chatError.textContent = err.message || 'Не удалось открыть файл.';
   } finally {
