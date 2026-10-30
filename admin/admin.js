@@ -239,6 +239,16 @@ function buildRules() {
           '.write': `${owner} && newData.child('by').val() == auth.token.email && newData.child('at').isNumber() && newData.hasChildren(['action','text','by','at'])`,
         },
       },
+      // Токены уведомлений: каждый пишет только свои, читает только сервер (он обходит правила).
+      pushTokens: {
+        '.read': false,
+        $uid: {
+          '.write': `${allowed} && auth.uid == $uid`,
+          $token: {
+            '.validate': "newData.hasChildren(['token','email','updatedAt']) && newData.child('token').isString() && newData.child('token').val().length <= 400",
+          },
+        },
+      },
       messages: {
         '.read': allowed,
         $id: {
