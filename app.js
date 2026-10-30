@@ -551,10 +551,14 @@ fileInput.addEventListener('change', () => {
 });
 async function uploadFile(f) {
   const idToken = await user.getIdToken();
-  const r = await fetch(API_BASE + '/upload-url', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken, fileName: f.name, size: f.size, contentType: f.type || 'application/octet-stream' }) });
+  const r = await fetch(API_BASE + '/upload-form', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ idToken, fileName: f.name, size: f.size, contentType: f.type || 'application/octet-stream' }) });
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.error || 'Не удалось загрузить файл.');
-  const put = await fetch(d.uploadUrl, { method: 'PUT', headers: { 'Content-Type': d.contentType }, body: f });
+  // Загрузка формой: поля политики идут первыми, файл последним. Размер проверяет хранилище.
+  const form = new FormData();
+  Object.entries(d.post.fields).forEach(([name, value]) => form.append(name, value));
+  form.append('file', f);
+  const put = await fetch(d.post.url, { method: 'POST', body: form });
   if (!put.ok) throw new Error('Файл не загрузился, попробуйте ещё раз.');
   return { key: d.key, name: f.name, size: f.size, type: d.contentType };
 }
