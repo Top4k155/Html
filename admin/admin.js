@@ -223,7 +223,8 @@ function ownerExpr() {
 function buildRules() {
   const allowed = allowExpr();
   const owner = ownerExpr();
-  const messageWrite = `${allowed} && ((newData.exists() && !data.exists() && newData.child('uid').val() == auth.uid && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 2000 && newData.child('email').val() == auth.token.email && newData.child('name').isString() && newData.child('name').val().length <= 120 && newData.hasChildren(['uid','name','email','text','createdAt']) && newData.child('createdAt').isNumber() && newData.child('createdAt').val() <= now + 60000 && newData.child('createdAt').val() >= now - 60000) || (data.exists() && !newData.exists() && data.child('uid').val() == auth.uid))`;
+  const fileOk = `(!newData.child('file').exists() || (newData.child('file').hasChildren(['key','name','size','type']) && newData.child('file').child('key').isString() && newData.child('file').child('key').val().length <= 200 && newData.child('file').child('name').isString() && newData.child('file').child('name').val().length <= 200 && newData.child('file').child('size').isNumber()))`;
+  const messageWrite = `${allowed} && ((newData.exists() && !data.exists() && newData.child('uid').val() == auth.uid && newData.child('text').isString() && newData.child('text').val().length > 0 && newData.child('text').val().length <= 2000 && newData.child('email').val() == auth.token.email && newData.child('name').isString() && newData.child('name').val().length <= 120 && newData.hasChildren(['uid','name','email','text','createdAt']) && ${fileOk} && newData.child('createdAt').isNumber() && newData.child('createdAt').val() <= now + 60000 && newData.child('createdAt').val() >= now - 60000) || (data.exists() && !newData.exists() && data.child('uid').val() == auth.uid))`;
   return {
     rules: {
       '.read': false,
@@ -240,7 +241,22 @@ function buildRules() {
       },
       messages: {
         '.read': allowed,
-        $id: { '.write': messageWrite },
+        $id: {
+          '.write': messageWrite,
+          uid: { '.validate': true },
+          name: { '.validate': true },
+          email: { '.validate': true },
+          text: { '.validate': true },
+          createdAt: { '.validate': true },
+          file: {
+            key: { '.validate': true },
+            name: { '.validate': true },
+            size: { '.validate': true },
+            type: { '.validate': true },
+            $other: { '.validate': false },
+          },
+          $other: { '.validate': false },
+        },
       },
       pinnedMessage: {
         '.read': allowed,
