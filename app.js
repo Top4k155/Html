@@ -334,25 +334,34 @@ if (!placeholder) {
   // Прототип GIS: Google отдаёт ID-токен прямо в кнопке, без редиректа через firebaseapp.com.
   const GIS_CLIENT_ID = '887986973315-3pepkalo7oe4dl70025rij8nm8sgq3i5.apps.googleusercontent.com';
   loginBtn.classList.add('hidden');
-  const gisBox = $('#gisBtn');
+  const gisBtn = $('#gisBtn');
+  let tokenClient = null;
+  // Своя кнопка, окно Google открывается по клику (всплывающее, без редиректа).
   function initGis() {
-    window.google.accounts.id.initialize({
+    tokenClient = window.google.accounts.oauth2.initTokenClient({
       client_id: GIS_CLIENT_ID,
-      ux_mode: 'popup',
-      auto_select: false,
+      scope: 'openid email profile',
+      prompt: 'select_account',
       callback: async (resp) => {
+        if (resp.error) { loginError.textContent = 'Вход через Google не выполнен.'; return; }
         loginError.textContent = '';
         try {
-          await signInWithCredential(auth, GoogleAuthProvider.credential(resp.credential));
+          await signInWithCredential(auth, GoogleAuthProvider.credential(null, resp.access_token));
         } catch (err) {
           loginError.textContent = showError(err);
         }
       },
+      error_callback: () => { loginError.textContent = 'Окно входа Google закрыто, попробуйте ещё раз.'; },
     });
-    window.google.accounts.id.renderButton(gisBox, { theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', width: 352, locale: 'ru' });
   }
+  gisBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    loginError.textContent = '';
+    if (!tokenClient) { loginError.textContent = 'Вход через Google ещё загружается, подождите секунду.'; return; }
+    tokenClient.requestAccessToken();
+  });
   (function waitGis(n) {
-    if (window.google?.accounts?.id) initGis();
+    if (window.google?.accounts?.oauth2) initGis();
     else if (n < 400) setTimeout(() => waitGis(n + 1), 25);
     else loginError.textContent = 'Не загрузился вход через Google.';
   })(0);
