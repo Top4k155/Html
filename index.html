@@ -298,6 +298,7 @@ html[data-theme="dark"] .login{box-shadow:none}
   <h1>Войти в чат</h1>
   <p class="muted">Войдите через Google или Яндекс, чтобы читать и отправлять сообщения.</p>
   <button id="loginBtn" class="btn primary" type="button">Продолжить с Google</button>
+    <div id="gisBtn" class="gis-box"></div>
   <button id="yandexBtn" class="btn" type="button">Войти через Яндекс</button>
   <div id="loginError" class="error" role="alert"></div>
   <p class="note">Доступ есть только у адресов, добавленных в правила базы.</p>
@@ -375,6 +376,7 @@ html[data-theme="dark"] .login{box-shadow:none}
   </div>
 </div>
 <div id="messageMenu" class="msg-menu hidden"></div>
+<script src="https://accounts.google.com/gsi/client" async></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>

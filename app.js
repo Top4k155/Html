@@ -1,5 +1,5 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-app.js';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, signInWithCustomToken, signInWithCredential } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved, get } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
 import { firebaseConfig, ownerEmail } from './firebase-config.js';
 import { YANDEX_CLIENT_ID, API_BASE, VAPID_KEY } from './config.js';
@@ -331,29 +331,31 @@ if (!placeholder) {
   auth = getAuth(firebase);
   db = getDatabase(firebase);
   const loginBtn = $('#loginBtn');
-  loginBtn.disabled = true;
-  // getRedirectResult поднимает скрытый iframe Google (около 1 с), поэтому вызываем его только после возврата с редиректа.
-  const REDIRECT_FLAG = 'chat-google-redirect';
-  const goRedirect = () => { try { sessionStorage.setItem(REDIRECT_FLAG, '1'); } catch {} return signInWithRedirect(auth, provider); };
-  if (sessionStorage.getItem(REDIRECT_FLAG)) {
-    sessionStorage.removeItem(REDIRECT_FLAG);
-    getRedirectResult(auth).catch((e) => { loginError.textContent = showError(e); }).finally(() => { loginBtn.disabled = false; });
-  } else {
-    loginBtn.disabled = false;
+  // Прототип GIS: Google отдаёт ID-токен прямо в кнопке, без редиректа через firebaseapp.com.
+  const GIS_CLIENT_ID = '887986973315-3pepkalo7oe4dl70025rij8nm8sgq3i5.apps.googleusercontent.com';
+  loginBtn.classList.add('hidden');
+  const gisBox = $('#gisBtn');
+  function initGis() {
+    window.google.accounts.id.initialize({
+      client_id: GIS_CLIENT_ID,
+      ux_mode: 'popup',
+      auto_select: false,
+      callback: async (resp) => {
+        loginError.textContent = '';
+        try {
+          await signInWithCredential(auth, GoogleAuthProvider.credential(resp.credential));
+        } catch (err) {
+          loginError.textContent = showError(err);
+        }
+      },
+    });
+    window.google.accounts.id.renderButton(gisBox, { theme: 'outline', size: 'large', text: 'continue_with', shape: 'pill', width: 352, locale: 'ru' });
   }
-  loginBtn.addEventListener('click', async (e) => {
-    e.preventDefault();
-    loginError.textContent = '';
-    loginBtn.disabled = true;
-    try {
-      // Вход через Google всегда редиректом: окно Google не открываем, оно грузилось 1,5–2 с.
-      await goRedirect();
-    } catch (err) {
-      loginError.textContent = showError(err);
-    } finally {
-      loginBtn.disabled = false;
-    }
-  });
+  (function waitGis(n) {
+    if (window.google?.accounts?.id) initGis();
+    else if (n < 400) setTimeout(() => waitGis(n + 1), 25);
+    else loginError.textContent = 'Не загрузился вход через Google.';
+  })(0);
   const yandexBtn = $('#yandexBtn');
   yandexBtn.addEventListener('click', (e) => {
     e.preventDefault();
