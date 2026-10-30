@@ -6,7 +6,9 @@ export const firebaseConfig = {
   authDomain: "all823218.firebaseapp.com",
   databaseURL: "https://all823218-default-rtdb.firebaseio.com",
   projectId: "all823218",
-  appId: "1:887986973315:web:ffb5229794697a80b289b6"
+  appId: "1:887986973315:web:ffb5229794697a80b289b6",
+  // Sender ID для уведомлений: номер проекта из Project settings → Cloud Messaging.
+  messagingSenderId: "887986973315"
 };
 
 // Владелец чата: может закреплять и откреплять сообщения.

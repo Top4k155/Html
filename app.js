@@ -2,7 +2,8 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.10.0/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, onAuthStateChanged, signOut, signInWithCustomToken } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js';
 import { getDatabase, ref, push, query, limitToLast, onChildAdded, serverTimestamp, remove, set, onValue, onChildRemoved, get } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js';
 import { firebaseConfig, ownerEmail } from './firebase-config.js';
-import { YANDEX_CLIENT_ID, API_BASE } from './config.js';
+import { YANDEX_CLIENT_ID, API_BASE, VAPID_KEY } from './config.js';
+import { getMessaging, getToken } from 'https://www.gstatic.com/firebasejs/11.10.0/firebase-messaging.js';
 
 const $ = (s) => document.querySelector(s);
 const login = $('#login');
@@ -16,6 +17,7 @@ const menu = $('#messageMenu');
 
 let auth;
 let db;
+let fbApp;
 let user;
 let stopMessages;
 let stopPin;
@@ -325,6 +327,7 @@ provider.setCustomParameters({ prompt: 'select_account' });
 
 if (!placeholder) {
   const firebase = initializeApp(firebaseConfig);
+  fbApp = firebase;
   auth = getAuth(firebase);
   db = getDatabase(firebase);
   const loginBtn = $('#loginBtn');
@@ -600,6 +603,45 @@ $('#unpin').onclick = async () => {
   catch (e) { fail(e); }
 };
 $('#logout').onclick = () => auth && signOut(auth);
+
+// ---------- уведомления о новых сообщениях ----------
+const pushBtn = $('#pushBtn');
+if ('serviceWorker' in navigator && 'Notification' in window && 'PushManager' in window && VAPID_KEY) {
+  pushBtn.classList.remove('hidden');
+}
+// Токен сохраняется под uid в pushTokens; сервер шлёт push только тем, у кого есть токен и почта допущена.
+pushBtn.onclick = async () => {
+  if (!user || !fbApp) return;
+  chatError.textContent = '';
+  pushBtn.disabled = true;
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') throw new Error('уведомления запрещены в настройках браузера.');
+    const reg = await navigator.serviceWorker.register('firebase-messaging-sw.js');
+    const token = await getToken(getMessaging(fbApp), { vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (!token) throw new Error('не удалось получить токен устройства.');
+    await set(ref(db, 'pushTokens/' + user.uid + '/' + token), { token, email: user.email || '', updatedAt: Date.now() });
+    pushBtn.classList.add('on');
+    pushBtn.querySelector('.lbl').textContent = 'Уведомления включены';
+    return;
+  } catch (err) {
+    chatError.textContent = 'Уведомления: ' + (err.message || err);
+  }
+  pushBtn.disabled = false;
+};
+// Сервер сам рассылает push остальным участникам. Чат не ждём: сбой уведомления не должен мешать сообщению.
+async function notifyOthers(text, name) {
+  try {
+    if (!API_BASE || !user) return;
+    const idToken = await user.getIdToken();
+    fetch(API_BASE + '/notify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ idToken, text: String(text || '').slice(0, 140), name: String(name || 'Участник').slice(0, 60) }),
+      keepalive: true,
+    }).catch(() => {});
+  } catch {}
+}
 $('#form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const input = $('#text');
@@ -625,6 +667,7 @@ $('#form').addEventListener('submit', async (e) => {
     };
     if (file) data.file = await uploadFile(file);
     await push(ref(db, 'messages'), data);
+    notifyOthers(data.text, data.name);
     input.value = '';
     clearFile();
     chatError.textContent = '';
