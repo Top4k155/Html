@@ -329,17 +329,25 @@ if (!placeholder) {
   db = getDatabase(firebase);
   const loginBtn = $('#loginBtn');
   loginBtn.disabled = true;
-  getRedirectResult(auth).catch((e) => { loginError.textContent = showError(e); }).finally(() => { loginBtn.disabled = false; });
+  // getRedirectResult поднимает скрытый iframe Google (около 1 с), поэтому вызываем его только после возврата с редиректа.
+  const REDIRECT_FLAG = 'chat-google-redirect';
+  const goRedirect = () => { try { sessionStorage.setItem(REDIRECT_FLAG, '1'); } catch {} return signInWithRedirect(auth, provider); };
+  if (sessionStorage.getItem(REDIRECT_FLAG)) {
+    sessionStorage.removeItem(REDIRECT_FLAG);
+    getRedirectResult(auth).catch((e) => { loginError.textContent = showError(e); }).finally(() => { loginBtn.disabled = false; });
+  } else {
+    loginBtn.disabled = false;
+  }
   loginBtn.addEventListener('click', async (e) => {
     e.preventDefault();
     loginError.textContent = '';
     loginBtn.disabled = true;
     try {
-      if (wantsRedirect()) await signInWithRedirect(auth, provider);
+      if (wantsRedirect()) await goRedirect();
       else {
         try { await signInWithPopup(auth, provider); }
         catch (err) {
-          if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/operation-not-supported-in-this-environment') await signInWithRedirect(auth, provider);
+          if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/operation-not-supported-in-this-environment') await goRedirect();
           else throw err;
         }
       }
@@ -357,6 +365,8 @@ if (!placeholder) {
     const back = location.origin + location.pathname;
     location.href = 'https://oauth.yandex.ru/authorize?response_type=token&client_id=' + encodeURIComponent(YANDEX_CLIENT_ID) + '&redirect_uri=' + encodeURIComponent(back);
   });
+  // Прогрев шлюза входа: холодный старт функции около 1,5 с, тёплый около 0,5 с.
+  if (API_BASE) fetch(API_BASE + '/yandex-login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}', keepalive: true }).catch(() => {});
   const yaToken = new URLSearchParams(location.hash.slice(1)).get('access_token');
   if (yaToken) {
     history.replaceState(null, '', location.pathname + location.search);
