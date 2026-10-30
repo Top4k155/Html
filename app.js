@@ -346,14 +346,8 @@ if (!placeholder) {
     loginError.textContent = '';
     loginBtn.disabled = true;
     try {
-      if (wantsRedirect()) await goRedirect();
-      else {
-        try { await signInWithPopup(auth, provider); }
-        catch (err) {
-          if (err?.code === 'auth/popup-blocked' || err?.code === 'auth/operation-not-supported-in-this-environment') await goRedirect();
-          else throw err;
-        }
-      }
+      // Вход через Google всегда редиректом: окно Google не открываем, оно грузилось 1,5–2 с.
+      await goRedirect();
     } catch (err) {
       loginError.textContent = showError(err);
     } finally {
